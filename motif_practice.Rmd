@@ -46,6 +46,7 @@ If you would like to download data from the A20, follow this link:
 list.files(path = "data/A2O/", recursive = TRUE)
 ```
 
+TODO: run tree again in this directory (more files)
 ```
 . ~/Projects/Ecoacoustics/motifR/data/A2O
 ├── 253_SEQPSamfordDryA

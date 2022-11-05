@@ -1,7 +1,9 @@
+
+# get dat path function
+
 get_data_path <- function(...) {
         return(file.path(getwd(),  ...))
 }
-
 #list_myfiles is going to list all the files in one folder because most times we will be using for loops and doing the same task in different files.
 
 folder <- "data/indices-output/"

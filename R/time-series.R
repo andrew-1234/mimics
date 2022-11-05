@@ -13,15 +13,14 @@ folder <- "data/indices-output/"
 files <- list_myfiles(search_pattern = ".Indices.csv")
 
 # subset to change the for loop
-file <- files[1]
+#file <- files[1]
 
 # generate metadata based on folder structure
 # generate metadata from api call to a2O??
 # support using a metadata table as input
 # point id can be 1 if only one sensor per site
 # TODO: need point id or later parts of scripts might be annoying to configure
-get_data_path()
-getwd()
+
 
 
 # isntead of writing to csvs, just read each iteration, rbind into a new dataframe?
@@ -98,7 +97,7 @@ for (file in files) {
                         filepath
                 ) %>%
                 # TODO: select based on names instead of index
-                mutate_at(vars(indices), scale) %>%
+                mutate_at(vars(all_of(indices)), scale) %>%
                 with(., .[order(as.numeric(date), as.numeric(time), ResultMinute),])
         data_indices_all <- rbind(data_indices_all, data_indices)
 }

@@ -24,11 +24,6 @@ find_program <- function(package) {
         }
 }
 
-# get dat path function
-
-get_data_path <- function(...) {
-  return(file.path(getwd(),  ...))
-}
 # get_data_path("data/Motif_data/")
 
 # run AP commands in R function
