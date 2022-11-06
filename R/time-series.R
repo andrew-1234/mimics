@@ -149,6 +149,7 @@ if (!dir.exists(timeseries_input)) {
 
 # this subsets into each index / site / month
 # TODO: need a unique ID row?? result minute and FID is not unique I think
+# TODO: fix this loop to match time_processing_cont (start with the for calls one after another and check that it works)
 
 for (x in indices_subset_list) {
         temp <- NULL
