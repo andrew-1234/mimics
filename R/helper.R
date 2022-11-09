@@ -1,43 +1,60 @@
-
-# get dat path function
-
+#' Get data path
+#'
+#' Enter a directory relative to the current working directly, and return the full path.
+#' @param ... enter your directory or multiple directories
+#'
+#' @return a full path
+#' @export
+#'
+#' @examples
+#' get_data_path()
+#' get_data_path("data/sounds")
 get_data_path <- function(...) {
         return(file.path(getwd(),  ...))
 }
+
 #list_myfiles is going to list all the files in one folder because most times we will be using for loops and doing the same task in different files.
 
-folder <- "data/indices-output/"
+# folder <- "data/indices-output/"
 
-list_myfiles <- function(step = NULL, search_pattern) {
-        if (is.null(step)) {
-                list.files(
-                        get_data_path(folder),
-                        pattern = search_pattern,
-                        recursive = T,
-                        full.names = T
-                )
-
-        } else {
-                list.files(
-                        get_data_path(folder, step),
-                        pattern = search_pattern,
-                        recursive = T,
-                        full.names = T
-                )
-        }
-
-}
+# list_myfiles <- function(step = NULL, search_pattern) {
+#         if (is.null(step)) {
+#                 list.files(
+#                         get_data_path(folder),
+#                         pattern = search_pattern,
+#                         recursive = T,
+#                         full.names = T
+#                 )
+#
+#         } else {
+#                 list.files(
+#                         get_data_path(folder, step),
+#                         pattern = search_pattern,
+#                         recursive = T,
+#                         full.names = T
+#                 )
+#         }
+#
+# }
 
 # create_mydir will create a directory inside the parent folder so we can store results
-create_mydir <- function(current_step) {
-        dir.create(getDataPath(folder, current_step))
-}
+# create_mydir <- function(current_step) {
+#         dir.create(getDataPath(folder, current_step))
+# }
 
 # ordering_files will be needed in step 2 when we build the time-series, i.e. putting files in order.
 
-ordering_files <-
-        function(original_dataframe,
-                 index_name) {
+#' Ordering files
+#'
+#' Needed to build the time-series (put the files in order)
+#' @param original_dataframe
+#' @param index_name
+#'
+#' @return todo
+#' @export
+#'
+#' @examples
+ordering_files <- function(original_dataframe, index_name) {
                 if (is.null(index_name)) {
                         c <- read.csv(original_dataframe) %>%
                                 with(., .[order(date_time, ResultMinute), ])
@@ -77,11 +94,11 @@ ordering_files <-
 # HIME calls the HIME algorithm in powershell. This can be done separately by openning Powershell and running the command directly, I just put it here so it is easier for people without familiarity with Powershell.
 
 # TODO need to make windows/vs mac compatible. can you call powershell on windows with pwsh?
-#' Title
+#' Hime call
 #'
-#' @param command
+#' @param command todo
 #'
-#' @return
+#' @return todo
 #' @export
 #'
 #' @examples
@@ -90,6 +107,7 @@ HIME <- function(command) {
 }
 
 # This might be the most complicated function here, but nothing to worry about. iteration1 will be used when cleaning up the motifs seeing there are lots of repetition. Again, the authors of the paper that did the algorithm and everything propose a different solution to cleaning them up, but this was the way I found to make it easier and straightforward when dealing with heaps of data as I was. This function is assigning the word “repeated” to motifs that overlap.
+
 iteration1 <- function(motif_results_df) {
         for (row in 1:nrow(motif_results_df)) {
                 motif_results_df$overlap[row] = case_when(
@@ -142,4 +160,9 @@ remove_repeated <- function(motif_results_df) {
 # step7 <- "7_CropSpectrogram"
 # step8 <- "8_FeatureExtraction"
 
+# source https://www.mail-archive.com/r-help@r-project.org/msg117700.html
+stopQuietly <- function(...) {
+        blankMsg <- sprintf("\r%s\r", paste(rep(" ", getOption("width")-1L), collapse=" "));
+        stop(simpleError(blankMsg));
+} # stopQuietly()
 

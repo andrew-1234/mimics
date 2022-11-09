@@ -1,202 +1,165 @@
 for (geo in geo_id) {
-        for (month in month_id) {
 
-                skip_to_next <- FALSE
-
-                tryCatch({
-                        complete_ts <-
-                                read.csv(getDataPath(folder,
-                                                     step2,
-                                                     paste("TS_", geo, "_", month, ".csv", sep = ""))) %>%
-                                mutate(., position = seq_len(nrow(.)))
-
-                },
-
-                error = function(e) {
-                        skip_to_next <<- TRUE
-                })
-
-                if (skip_to_next) {
-                        next
-
-                }
-
-                plot_ts <-
-                        select(complete_ts, position, all_of(indices)) %>%
-                        pivot_longer(.,
-                                     cols = 2:4,
-                                     names_to = "index",
-                                     values_to = "value")
-
-                ggplot(plot_ts, aes(x = position, y = value)) +
-                        geom_line() +
-                        facet_wrap(. ~ index) +
-                        theme_classic() +
-                        theme(axis.text.x = element_blank())
-                ggsave(getDataPath(
-                        folder,
-                        "Figures",
-                        paste(geo, month, "indicespertime.jpg", sep = "_")
-                ))
+                motif_complete <- NULL
+                file_result <- NULL
+                img_prep <- NULL
+                ts_data <- NULL
+                ts_list <- NULL
 
 
-                for (index in indices) {
-                        complete_inter <-
-                                select(complete_ts, all_of(index), 4:ncol(complete_ts)) %>%
-                                mutate(., motif = NA) %>%
-                                mutate(., distance = NA) %>%
-                                mutate(., length = NA) %>%
-                                mutate(., reference = "0_ts") %>%
-                                mutate(., id = 0) %>%
-                                rename(., Index = index)
+                motif_complete <- data.frame(
+                        position =	integer(),
+                        index_value = numeric(),
+                        FileName = factor(),
+                        date = integer(),
+                        time = integer(),
+                        ResultMinute = integer(),
+                        FID = character(),
+                        distance = numeric(),
+                        length = integer(),
+                        reference = character(),
+                        id	= character(),
+                        fid_what = factor(),
+                        site = factor(),
+                        point = factor(),
+                        date_time = factor()
+                )
 
+                files <-
+                        list_myfiles(step5,
+                                     search_pattern = glob2rx(paste(geo, "*motif.csv", sep = "_")))
 
-
-                        # Processing results
-
-                        motif_results <-
-                                read.table(getDataPath(
-                                        folder,
-                                        step4,
-                                        paste(geo, "_", month, "_", index, ".txt", sep = "")
-                                )) %>%
-                                rename(
+                for (file in files) {
+                        file_result <- read.csv(file) %>%
+                                dplyr::filter(., motif != is.na(T)) %>%
+                                dplyr::rename(., fid_what = motif) %>%
+                                dplyr::rename(., index_value = Index) %>%
+                                dplyr::mutate(.,
+                                              id = paste(
+                                                      basename(file) %>%
+                                                              gsub(pattern = "*_motif.csv", replacement = "") %>%
+                                                              gsub(pattern = "TemporalEntropy", replacement = "ENT") %>%
+                                                              gsub(pattern = "AcousticComplexity", replacement = "ACI") %>%
+                                                              gsub(pattern = "EventsPerSecond", replacement = "EVN"),
+                                                      fid_what,
+                                                      sep = "_"
+                                              )) %>%
+                                dplyr::select(
                                         .,
-                                        FirstInstance_Start = V1,
-                                        FirstInstance_End = V2,
-                                        SecondInstance_Start = V3,
-                                        SecondInstance_End = V4,
-                                        Length = V5,
-                                        Distance = V6
-                                ) %>%
-                                mutate(., id = 1:as.numeric(count(.))) %>%
-                                filter(., Distance <= 5) %>%
-                                select(., id, everything()) %>%
-                                pivot_longer(.,
-                                             cols = 2:5,
-                                             names_to = "Instance",
-                                             values_to = "position") %>%
-                                mutate(.,
-                                       Instance = gsub(
-                                               pattern = "FirstInstance",
-                                               replacement = "motif",
-                                               x = Instance
-                                       )) %>%
-                                mutate(.,
-                                       Instance = gsub(
-                                               pattern = "SecondInstance",
-                                               replacement = "match",
-                                               x = Instance
-                                       )) %>%
-                                separate(.,
-                                         Instance,
-                                         into = c("instance", "moment"),
-                                         sep = "_") %>%
-                                pivot_wider(., names_from = moment, values_from = position) %>%
-                                mutate(., instance = paste(id, instance, sep = "_")) %>%
-                                with(., .[order(Start), ]) %>%
-                                mutate(., overlap = NA) %>%
-                                remove_repeated(.)
-
-
-
-                        for (row in 1:nrow(complete_inter)) {
-
-
-                                skip_to_next <- FALSE
-
-                                tryCatch({
-                                        complete_inter[motif_results$Start[row]:motif_results$End[row], c("motif", "distance", "length")] <-
-                                                motif_results[row, c("instance", "Distance", "Length")]
-                                },
-
-                                error = function(e) {
-                                        skip_to_next <<- TRUE
-                                })
-
-                                if (skip_to_next) {
-                                        next
-
-                                }
-                        }
-
-                        complete_inter <-  group_by(complete_inter, motif) %>%
-                                add_count(.) %>%
-                                filter(n>=30)
-
-
-                        write.csv(complete_inter,
-                                  getDataPath(
-                                          folder,
-                                          step5,
-                                          paste(geo, month, index, "motif.csv", sep = "_")
-                                  ),
-                                  row.names = F)
-
-                        plot_ts <-
-                                select(complete_inter, reference, position, Index, date, time) %>%
-                                separate(.,
-                                         reference,
-                                         into = c("number", "what"),
-                                         remove = F)
-
-                        plot_motif <-
-                                select(complete_inter, motif, position, Index) %>%
-                                rename(., reference = motif) %>%
-                                filter(reference != "NA") %>%
-                                separate(.,
-                                         reference,
-                                         into = c("number", "what"),
-                                         remove = F)
-
-
-                        #6 in BNE = +10
-                        line_intercept1 <- filter(plot_ts, grepl("160000*", time)) %>%
-                                .[!duplicated(.$date), ] %>%
-                                mutate(time = 060000) %>%
-                                select(time, position)
-
-                        #18 in BNE = +10
-                        line_intercept2 <- filter(plot_ts, grepl("040000*", time)) %>%
-                                .[!duplicated(.$date), ] %>%
-                                mutate(time = 180000) %>%
-                                select(time, position)
-
-                        ggplot(plot_ts, aes(x = position, y = Index)) +
-                                geom_line(aes(colour = what, linetype = what), colour = "grey") +
-                                geom_vline(xintercept = line_intercept1$position, linetype = "dotted") +
-                                geom_text(data = line_intercept1,
-                                          aes(label = time, y = 10, size = 1),
-                                          check_overlap = T) +
-                                geom_vline(xintercept = line_intercept2$position, linetype = "dotted") +
-                                geom_text(data = line_intercept2,
-                                          aes(label = time, y = 10, size = 1),
-                                          check_overlap = T) +
-                                scale_linetype_manual(values = "dotted") +
-                                geom_line(data = plot_motif, aes(
-                                        x = position,
-                                        y = Index,
-                                        colour = reference
-                                )) +
-                                scale_color_manual(values = c(replicate(nrow(
-                                        motif_results
-                                ), "#2ca25f"))) +
-                                theme_classic() +
-                                labs(title = paste(index, sep = " ")) +
-                                theme(
-                                        legend.title = element_blank(),
-                                        axis.title.x = element_blank(),
-                                        axis.text = element_blank(),
-                                        axis.ticks = element_blank(),
-                                        legend.position = "none"
+                                        position,
+                                        index_value,
+                                        FileName,
+                                        date,
+                                        time,
+                                        ResultMinute,
+                                        distance,
+                                        length,
+                                        reference,
+                                        id,
+                                        fid_what,
+                                        site,
+                                        point,
+                                        date_time
                                 )
-                        ggsave(getDataPath(
-                                folder,
-                                "Figures",
-                                paste(geo, "_", month, "_", index, "ts_motifs.jpg", sep = "")
-                        ))
+                        motif_complete <- rbind(motif_complete, file_result) %>%
+                                filter(.$index_value != "NA")
+##### up to here
+
+                        img_prep <- separate(motif_complete,
+                                             id,
+                                             into = c("site", "point", "month", "index_name", "motif_number", "what"),
+                                             remove = F
+                        ) %>%
+                                group_by(., id) %>%
+                                mutate(., new_position = order(order(position))) %>%
+                                ungroup(.) %>%
+                                select(everything(), -c(position)) %>%
+                                group_by(id) %>%
+                                filter(ResultMinute == min(ResultMinute))
+
+                        dir.create(getDataPath(folder, step7, unique(img_prep$site)))
+                        dir.create(getDataPath(folder, step7,unique(img_prep$site), unique(img_prep$point)))
+
+# this is reading in images from the output of AP, one image per index per recording
+                        for (row in 1:nrow(img_prep)) {
+
+                                image_read(list.files(getDataPath(folder, img_prep$site[row], img_prep$point[row], paste(img_prep$date[row], "_AAO_-27.3888+152.8808", sep = ""), paste(img_prep$date[row], "T", img_prep$time[row], "_REC_-27.3888+152.8808.flac", sep = "")), pattern = "__ENT.png", full.names = T, recursive = T)) %>%
+                                        image_crop(
+                                                .,
+                                                geometry_area(
+                                                        height = 256,
+                                                        width = img_prep$length[row] - (1 - img_prep$ResultMinute[row]),
+                                                        y_off = 20,
+                                                        x_off = img_prep$ResultMinute[row]
+                                                )
+                                        ) %>%
+                                        image_write(., getDataPath(
+                                                folder,
+                                                step7,
+                                                img_prep$site[row],
+                                                img_prep$point[row],
+                                                paste(img_prep$id[row],
+                                                      ".png",
+                                                      sep = ""
+                                                )
+                                        ))
+                        }
+                }
+
+                ts_data <- select(motif_complete, index_value, position, id) %>%
+                        group_by(., id) %>%
+                        mutate(., new_position = order(order(position))) %>%
+                        ungroup(.) %>%
+                        select(., everything(), -position) %>%
+                        pivot_wider(., names_from = new_position, values_from = index_value) %>%
+                        as.data.frame(.)
+
+
+
+                rownames(ts_data) <- ts_data$id
+                ts_data <- ts_data[,2:length(ts_data)]
+
+
+                ts_list <- tslist(ts_data) %>%
+                        map(., na.omit)
+
+
+                wtData <- NULL
+
+
+                for (i in ts_list) {
+
+                        wt <- dwt(i, filter="haar", boundary= "periodic")
+
+                        un <- as.data.frame(t(unlist(c(wt@W,wt@V[[wt@level]]))))
+
+                        wtData <- plyr::rbind.fill(wtData, un)
 
                 }
+
+                wtData <- na.roughfix(wtData)
+
+                wtData$id <- rownames(ts_data)
+
+                wtData <- mutate(wtData, class = NA) %>%
+                        mutate(., geo = NA) %>%
+                        mutate(., techno = NA)
+                select(., id, class, geo, techno, everything())
+
+
+                samples <- sample(wtData$id, size = ceiling(nrow(wtData)*0.30), replace = F)
+
+                write.csv(wtData, getDataPath(folder, step8, paste(geo, "_", "_wavelet.csv", sep = "")), row.names = F)
+                write.csv(samples, getDataPath(folder, step8, paste(geo, "_", "_LabelsSample.csv", sep = "")), row.names = F)
+
+                write.csv(motif_complete,
+                          getDataPath(
+                                  folder,
+                                  step6,
+                                  paste(geo, "motif_complete.csv", sep = "_")
+                          ),
+                          row.names = F)
+
 
         }
 }
