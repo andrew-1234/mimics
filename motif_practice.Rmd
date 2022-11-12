@@ -216,7 +216,11 @@ motif_plots(data_indices_all = my_indices_data,
 ATM this is called wavelet.R but might change. CHANGE to feature extraction
 
 ```{r}
-
+feature_extraction(data_indices_all = my_indices_data,
+                   himeclean = "output/hime-clean",
+                   outputspecpath = "output/specs",
+                   indicespath = "output/indices-output-ap",
+                   outwavelet = "output/wavelets")
 ```
 
 

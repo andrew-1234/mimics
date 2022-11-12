@@ -8,9 +8,10 @@ indicespath <- "output/indices-output-ap" # where you stored the output of AP
 asdf <- feature_extraction(data_indices_all = my_indices_data,
                            himeclean = "output/hime-clean",
                            outputspecpath = "output/specs",
-                           indicespath = "output/indices-output-ap")
+                           indicespath = "output/indices-output-ap",
+                           outwavelet = "output/wavelets")
 
-feature_extraction <- function(data_indices_all, himeclean, outputspecpath, indicespath) {
+feature_extraction <- function(data_indices_all, himeclean, outputspecpath, indicespath, outwavelet) {
 
         # get the unique site names
         total_sites <- unique(data_indices_all$site)
@@ -53,6 +54,10 @@ feature_extraction <- function(data_indices_all, himeclean, outputspecpath, indi
         extract_specs(outputspecs = outputspecpath,
                       img_prep_data = img_prep,
                       indicespath = indicespath)
+
+        # generate the csv files
+        make_csvs(motif_complete = motif_complete_df,
+                  outputpath = outwavelet)
 }
 
 
@@ -252,70 +257,84 @@ extract_specs <- function(outputspecs, img_prep_data, indicespath) {
 
 
 
-make_csvs <- function(variables) {
+make_csvs <- function(motif_complete, outputpath) {
 
-}
-# subset by site, and for loop for site
-sites <- unique(motif_complete$site)
-siteID <- sites[1]
-for (siteID in sites) {
-        motif_complete_site <- motif_complete %>% filter(site == siteID)
-
-        ts_data <- select(motif_complete_site, index_value, position, id) %>%
-                group_by(., id) %>%
-                mutate(., new_position = order(order(position))) %>%
-                ungroup(.) %>%
-                select(., everything(), -position) %>%
-                tidyr::pivot_wider(., names_from = new_position, values_from = index_value) %>%
-                as.data.frame(.)
-
-
-
-        rownames(ts_data) <- ts_data$id
-        ts_data <- ts_data[, 2:length(ts_data)]
-
-
-        ts_list <- dtwclust::tslist(ts_data) %>%
-                purrr::map(., na.omit)
-
-
-        wtData <- NULL
-
-
-        for (i in ts_list) {
-                wt <- wavelets::dwt(i, filter = "haar", boundary = "periodic")
-
-                un <- as.data.frame(t(unlist(c(wt@W, wt@V[[wt@level]]))))
-
-                wtData <- plyr::rbind.fill(wtData, un)
-
+        # check/create path to store the wavelet outputs
+        outputpath_full <- get_data_path(outputpath)
+        # create dir if does not exist
+        if (!dir.exists(outputpath_full)) {
+                dir.create(outputpath_full)
         }
 
-        wtData <- randomForest::na.roughfix(wtData)
+        # subset by site, and for loop for site
+        sites <- unique(motif_complete$site)
 
-        wtData$id <- rownames(ts_data)
+        siteID <- sites[1]
 
-        wtData <- mutate(wtData, class = NA) %>%
-                mutate(., geophony = NA) %>%
-                mutate(., technophony = NA) %>% # this had a pipe operator missing
-        select(., id, class, geophony, technophony, everything())
+        for (siteID in sites) {
+                motif_complete_site <- motif_complete %>% filter(site == siteID)
 
-        # pick 30 percent of the samples to label, without replacement
-        samples <-
-                sample(wtData$id, size = ceiling(nrow(wtData) * 0.30), replace = F)
+                ts_data <- select(motif_complete_site, index_value, position, id) %>%
+                        group_by(., id) %>%
+                        mutate(., new_position = order(order(position))) %>%
+                        ungroup(.) %>%
+                        select(., everything(), -position) %>%
+                        tidyr::pivot_wider(., names_from = new_position, values_from = index_value) %>%
+                        as.data.frame(.)
 
-        write.csv(wtData, get_data_path("output/step8",
-                                        paste(siteID, "_", "_wavelet.csv", sep = "")), row.names = F)
 
-        write.csv(samples, get_data_path("output/step8",
-                                         paste(siteID, "_", "_LabelsSample.csv", sep = "")), row.names = F)
+                # add row names
+                rownames(ts_data) <- ts_data$id
 
-        write.csv(motif_complete_site,
-                  get_data_path("output/step8",
-                              paste(siteID, "motif_complete.csv", sep = "_")),
-                  row.names = F)
+                # remove the ID column
+                ts_data <- ts_data[, 2:length(ts_data)]
 
+                # 'Change a matrix or data frame to a list of univariate time series'
+                ts_list <- dtwclust::tslist(ts_data) %>%
+                        purrr::map(., na.omit)
+
+
+                wtData <- NULL
+
+
+                for (i in ts_list) {
+                        # Computes the discrete wavelet transform
+                        # coefficients for a univariate or multivariate time series.
+                        wt <- wavelets::dwt(i, filter = "haar", boundary = "periodic")
+
+                        un <- as.data.frame(t(unlist(c(wt@W, wt@V[[wt@level]]))))
+
+                        wtData <- plyr::rbind.fill(wtData, un)
+
+                }
+
+                wtData <- randomForest::na.roughfix(wtData)
+
+                wtData$id <- rownames(ts_data)
+
+                wtData <- mutate(wtData, class = NA) %>%
+                        mutate(., geophony = NA) %>%
+                        mutate(., technophony = NA) %>% # this had a pipe operator missing
+                        select(., id, class, geophony, technophony, everything())
+
+                # pick 30 percent of the samples to label, without replacement
+                samples <-
+                        sample(wtData$id, size = ceiling(nrow(wtData) * 0.30), replace = F)
+
+                write.csv(wtData, get_data_path(outputpath,
+                                                paste(siteID, "_", "_wavelet.csv", sep = "")), row.names = F)
+
+                write.csv(samples, get_data_path(outputpath,
+                                                 paste(siteID, "_", "_LabelsSample.csv", sep = "")), row.names = F)
+
+                write.csv(motif_complete_site,
+                          get_data_path(outputpath,
+                                        paste(siteID, "motif_complete.csv", sep = "_")),
+                          row.names = F)
+
+        }
 }
+
 
 # open labels sample
 # then open wavelet
