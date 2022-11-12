@@ -173,6 +173,7 @@ Motifs have to be run ecosystems and months separately.
 
 # TODO: might need a function to return the dataframe without creating outputs again? but if you need to create the dataframe again its probably safesty to re-run the subsequent steps anyway, for consistency
 
+# IMPORTANT: the time_series function relies on your file times and dates being labelled correctly. Otherwise it will not function correctly. The time series being ordered is a critical step in the process. 
 my_indices_data <-
         motifR::time_series(indicesfolder = "backup/indices-output-ap", 
                     outputfolder = "output/timeseries")
@@ -207,3 +208,15 @@ motif_plots(data_indices_all = my_indices_data,
 ```
 
 `-- up to this point is working --`
+
+## Step 5 - 
+-step6: 6_CompleteMotif ----
+-step7: 7_CropSpectrogram ----
+-step8: 8_FeatureExtraction ----
+ATM this is called wavelet.R but might change. CHANGE to feature extraction
+
+```{r}
+
+```
+
+

@@ -142,7 +142,8 @@ data_indices_all <- NULL
                 # This scales the acoustic indices using the inbuilt scale() function for each file
                 dplyr::mutate_at(vars(all_of(indices)), scale) %>%
                 # now this sorts the rows by date, time, and result minute.
-                # important that the series is ordered.
+                # important that the series is ordered. TODO CHECK: But i think this is working.
+                # TODO: check as.numeric(date)
                 with(., .[order(as.numeric(date), as.numeric(time), ResultMinute),])
         # bind all the files together
         data_indices_all <- rbind(data_indices_all, data_indices)
