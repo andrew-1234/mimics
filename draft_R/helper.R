@@ -160,9 +160,4 @@ remove_repeated <- function(motif_results_df) {
 # step7 <- "7_CropSpectrogram"
 # step8 <- "8_FeatureExtraction"
 
-# source https://www.mail-archive.com/r-help@r-project.org/msg117700.html
-stopQuietly <- function(...) {
-        blankMsg <- sprintf("\r%s\r", paste(rep(" ", getOption("width")-1L), collapse=" "));
-        stop(simpleError(blankMsg));
-} # stopQuietly()
 

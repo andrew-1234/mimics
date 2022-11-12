@@ -83,20 +83,19 @@ old_path <- Sys.getenv("PATH")
 Sys.setenv(PATH = paste(old_path, "/Users/andrew/.local/bin", sep = ":"))
 
 # now check AP again
-find_program("AP")
+#find_program("AP")
 ```
 
 Now we can easily run AP commands in R: 
 ```{r}
-AP("-help")
+#AP("-help")
 ```
 
 #### Errors in sound files - what happens?
 
 Lets generate indices. All audio should be in one folder per study site (i.e. recorder location).
 ```{r}
-AP_prepare("data/A2O_with_errors/", "output/indices-output-ap")
-# add a message: will now generate acoustic indices. this could take a while...
+#AP_prepare("data/A2O_with_errors/", "output/indices-output-ap")
 ```
 
 You might notice in the above example I used the input directory `A2O_with_errors/`. This is data that I downloaded fresh from A2O. But I called it this because I tried to run AP and already know it has errors, and wanted to keep it as is to demonstrate what happens if you come across this issue. The error given is: `System.FormatException: Failed parsing 'N/A' to get FORMAT duration.` 
@@ -127,8 +126,10 @@ We can run emu:
 Now that I've fixed the files, i'll try to run AP analysis again. This will take some time. If you had errors, clear the `indices-output` folder before running this step on your fixed audio. 
 
 ```{r}
-AP_prepare("data/A2O", "output/indices-output-ap")
+AP_prepare("data/A2O-mini-test", "output/indices-output-ap-mini")
 ```
+
+`-- up to this point is working --`
 
 ![Example output](motif_practice_insertimage_1.png)
 

@@ -1,4 +1,4 @@
-#' Runs `which package`
+#' Runs `which` package
 #'
 #' To check if a package is available on path or not
 #'

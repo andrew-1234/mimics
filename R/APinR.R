@@ -1,15 +1,28 @@
-# todo general
+#----
+# TODO general:
 # research try function()
 # research shQuote
-
-# todo - simplify to return 1 or 0
 # modify to #.Platform$OS.type? unix vs windows
-# this file was first authored by Anthony and then modified by Andrew to run on macOS
+# this file was first authored by Anthony and then modified by Andrew into functions and with zsh options
+# --
+# create a setting for dealing with different file types
+# the A2O files have information in the names so 1 directory per file is self explanatory
+# but some people might not have such detailed names in which case preserved structure could be useful
+# add some default settings for these functions if no arguments are supplied
+#----
 
-# get_data_path("data/Motif_data/")
-
-# run AP commands in R function
-call_AP <- function(command) {
+#' Run AP commands in R wrapper function
+#'
+#' Tries to pass a command to AP or else return AP not installed error.
+#'
+#' @param command command you want to pass to AP
+#'
+#' @return TODO
+#' @export
+#'
+#' @examples
+#' call_AP("help")
+AP <- function(command) {
         if (.Platform$OS.type == "unix") {
                 if (find_program("AP") == "package AP is installed") {
                         try(system2('AP', command))
@@ -20,6 +33,18 @@ call_AP <- function(command) {
 }
 
 
+#' This function runs AP analysis
+#'
+#' Generates acoustic indices using AP with Towsey config, for all `flac` files detected in the supplied path.
+#'
+#' @param path_to_audio the path to your audio files
+#' @param path_to_output the output directory name that you would like to create and store the results in
+#'
+#' @return returns AP generated files
+#' @export
+#'
+#' @examples
+#' AP_prepare("data/my_audio", "output/indices")
 AP_prepare <- function(path_to_audio, path_to_output) {
 
   my_recordings <- get_data_path(path_to_audio)
@@ -34,7 +59,7 @@ AP_prepare <- function(path_to_audio, path_to_output) {
 
         if (answer == FALSE){
                 cat("No.", "Cancelling action.")
-                #stopQuietly()
+
         } else {
                 cat("Yes.", "Continuing...")
 
@@ -49,9 +74,9 @@ AP_prepare <- function(path_to_audio, path_to_output) {
                 }
         }
 
-        # now get the audio files
+        # prepare to run the get audio files function
         if (interactive())
-                answer <- askYesNo("Ready to process audio and generate indices. This will take a while. Proceed?", )
+                answer <- askYesNo("Ready to process audio and generate indices. This could take a long time! Proceed?", )
 
         if (answer == FALSE){
                 cat("No.", "Cancelling action.")
@@ -65,16 +90,15 @@ AP_prepare <- function(path_to_audio, path_to_output) {
 
 
 
-# Get a list of audio files inside the directory
-# (Get-ChildItem is just like ls, or dir)
-# create a setting for flac or wav, or detect, or both?
 
-# tested for 1 directory, now run for a list of directories done
-# TODO: sort the output into directories that mimic the parent directory strucutre
-# the A2O files have information in the names so 1 directory per file is self explanatory
-# but some people might not have such detailed names in which case preserved structure could be useful
-
-
+#' Get audio files and run AP analysis
+#'
+#' This function is called in AP_prepare. It gets the files, builds, and runs the AP commands
+#'
+#' @param dirs specified in AP_prepare: where audio files are stored
+#' @param base_output_directory specified in AP_prepare: where output files should be stored
+#'
+#' @export
 get_audio_files <- function(dirs, base_output_directory) {
 
         for (directory in dirs){
@@ -106,29 +130,23 @@ get_audio_files <- function(dirs, base_output_directory) {
                   system2('C:\\AP\\AnalysisPrograms.exe', command)
           } else {
                   message("Processing ", file)
+
                   # get just the name of the file
                   file_name <- basename(file)
 
                   # make folders for the results (one folder per audio file)
-                  # i dont think this part is working TODO but the script is auto making folders anyway??
-                  # maybe create directories at the start of the script and iterate through the AP X amount of times changing the output directory each time
-                  files <- list.files("data/A2O/253_SEQPSamfordDryA/", pattern = "*.flac", full.names = TRUE)
-                  files <- files[1]
-                  file_name <- basename(files)
-
-                  base_output_directory <- "output/indices-output-ap"
+                  # mustwork false silences the error because the directory doesn't exist yet
                   output_directory <-
-                          normalizePath(file.path(base_output_directory, file_name))
+                          normalizePath(file.path(base_output_directory, file_name), mustWork = FALSE)
 
                   dir.create(output_directory, recursive = TRUE)
-
                   # prepare command
                   command <-
                           paste(
                                   "audio2csv",
                                   shQuote(file, type = "sh"),
                                   "Towsey.Acoustic.yml",
-                                  shQuote(output_directory, type = "sh"),
+                                  shQuote(base_output_directory, type = "sh"),
                                   collapse = " "
                           )
 
