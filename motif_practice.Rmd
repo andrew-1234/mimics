@@ -6,6 +6,13 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+# Package stuff setup
+```{r}
+library(devtools)
+library(roxygen2)
+use_import_from("dplyr", "%>%")
+```
+
 # Todo
 - fully workflow template
 - generate spectrograms
@@ -123,19 +130,46 @@ We can run emu:
 
 #### Generating indices on fixed sound files
 
-Now that I've fixed the files, i'll try to run AP analysis again. This will take some time. If you had errors, clear the `indices-output` folder before running this step on your fixed audio. 
+Now that I've fixed the files, i'll try to run AP analysis again. This will take some time. If you had errors, clear the `indices-output` folder before running this step on your fixed audio. Remember that AP generates values for acoustic indices based on each 1 minute segment of audio.
 
 ```{r}
-AP_prepare("data/A2O-mini-test", "output/indices-output-ap-mini")
+AP_prepare("data/A2O-mini-test-rename", "output/indices-output-ap-mini")
 ```
 
-`-- up to this point is working --`
 
 ![Example output](motif_practice_insertimage_1.png)
 
-## Step 2 -
+## Step 2 - Time series
+Construct a time series for the acoustic indices
 
-Motifs have to be run ecosystems and months separately 
+Motifs have to be run ecosystems and months separately.
 
+```{r}
+# Notes from time_series.R to remember: ======
 
+# next we run the motif analysis based on a geographic and month subset
+# loop and make big df with all
+# subset into geo and month id
+# drop columns and get 1 df per index
+# run hime per month, per geo, per index - keep DF as is and when doing hime, subset what you want and then run (but it has to be ordered - ordering files function - date, time, result minutes)
+# hime takes .txt files
+# hime runs on pwsh from R
+# have to save the results files from hime
+# can output everything in same directory
+# set seed - when randomizing the labels etc for reproducible example important to set seed
+# if they want to try follow they should get exactly same result, for RF and everything.
+```
 
+```{r}
+# run the time_series
+# output is a data frame of all indices data combined
+# but this function also creates a folder, which stores the subset indices data that will be used for HIME input
+
+testing <-
+        motifR::time_series(indicesfolder = "backup/indices-output-ap", 
+                    outputfolder = "output/timeseries")
+
+```
+`-- up to this point is working --`
+
+## Step 3

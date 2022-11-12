@@ -10,6 +10,8 @@
 # but some people might not have such detailed names in which case preserved structure could be useful
 # add some default settings for these functions if no arguments are supplied
 #----
+#path_to_audio <- "data/A2O-mini-test"
+#path_to_output <- "output/indices-output-ap-mini"
 
 #' Run AP commands in R wrapper function
 #'
@@ -83,14 +85,14 @@ AP_prepare <- function(path_to_audio, path_to_output) {
 
         } else {
                 cat("Yes.", "Continuing...")
-        get_audio_files(dirs = dirs, base_output_directory = base_output_directory)
+        motifR::get_audio_files(dirs = dirs, base_output_directory = base_output_directory)
         }
 }
 
 
 
-
-
+#directory <- dirs[1]
+#file <- files[1]
 #' Get audio files and run AP analysis
 #'
 #' This function is called in AP_prepare. It gets the files, builds, and runs the AP commands
@@ -146,12 +148,12 @@ get_audio_files <- function(dirs, base_output_directory) {
                                   "audio2csv",
                                   shQuote(file, type = "sh"),
                                   "Towsey.Acoustic.yml",
-                                  shQuote(base_output_directory, type = "sh"),
+                                  shQuote(output_directory, type = "sh"),
                                   collapse = " "
                           )
 
                   # finally, execute the command
-                  AP(command)
+                  motifR::AP(command)
           }
   }
   }
