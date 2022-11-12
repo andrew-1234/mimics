@@ -10,7 +10,6 @@ editor_options:
 ```{r}
 library(devtools)
 library(roxygen2)
-use_import_from("dplyr", "%>%")
 ```
 
 # Todo
@@ -24,11 +23,13 @@ use_import_from("dplyr", "%>%")
 - a way to label / confirm motifs in R??
 
 ## Setup
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Install/reinstall
+
 ```{r}
 detach("package:motifR", unload=TRUE)
 install("/Users/andrew/Documents/Data Science/Projects/Ecoacoustics/motifR")
@@ -63,7 +64,8 @@ TODO: run tree again in this directory (more files)
 └── download_audio_files.ps1
 ```
 
-See some summary information about the files you're working with. My files are from 2021-01-01 to 2021-01-02. From one site, and two locations within that site.  
+See some summary information about the files you're working with. My files are from 2021-01-01 to 2021-01-02. From one site, and two locations within that site.
+
 ```{r}
 #TODO: nice summary info, number of recordings/files, total hours, total sites etc
 ```
@@ -94,6 +96,7 @@ Sys.setenv(PATH = paste(old_path, "/Users/andrew/.local/bin", sep = ":"))
 ```
 
 Now we can easily run AP commands in R: 
+
 ```{r}
 #AP("-help")
 ```
@@ -101,6 +104,7 @@ Now we can easily run AP commands in R:
 #### Errors in sound files - what happens?
 
 Lets generate indices. All audio should be in one folder per study site (i.e. recorder location).
+
 ```{r}
 #AP_prepare("data/A2O_with_errors/", "output/indices-output-ap")
 ```
@@ -109,6 +113,7 @@ You might notice in the above example I used the input directory `A2O_with_error
 Nowadays, all files uploaded to A2O are automatically checked for errors and fixed. But older files may still have errors. These files are from January 2021 and have an issue. But don't worry, it is fixable and I will show you how. If your files are OK you can skip this step. 
 
 We can run emu:
+
 ```{r}
 # get the metadata from a2O files and output as a .csv
 
@@ -140,6 +145,7 @@ AP_prepare("data/A2O-mini-test-rename", "output/indices-output-ap-mini")
 ![Example output](motif_practice_insertimage_1.png)
 
 ## Step 2 - Time series
+
 Construct a time series for the acoustic indices
 
 Motifs have to be run ecosystems and months separately.
@@ -165,15 +171,19 @@ Motifs have to be run ecosystems and months separately.
 # output is a data frame of all indices data combined
 # but this function also creates a folder, which stores the subset indices data that will be used for HIME input
 
-testing <-
+# TODO: might need a function to return the dataframe without creating outputs again? but if you need to create the dataframe again its probably safesty to re-run the subsequent steps anyway, for consistency
+
+my_indices_data <-
         motifR::time_series(indicesfolder = "backup/indices-output-ap", 
                     outputfolder = "output/timeseries")
 
 ```
-`-- up to this point is working --`
 
 ## Step 3 - HIME
+
 Starts with hime, hime processing, and then hime_processing_cont
+
+Hime can be used in a terminal if you like. `run_hime` is just a helpful wrapper function that calls HIME on each of the acoustic index time series files, and stores the output in text files with names, and in a separate directory. Hime was created by: 
 
 ```{r}
 # we can pass our own path 
@@ -185,4 +195,15 @@ run_hime(timeseriesdata = "output/timeseries",
 # run_hime(timeseriesdata, himeoutput)
 ```
 
-## Step 4 - hime clean up
+## Step 4 - generating some plots
+
+Generates some time series / motif plots. Also outputs the motifs.csv files (motif + timeseries data combined). 
+
+```{r}
+motif_plots(data_indices_all = my_indices_data,
+            outputfigures = "output/figures",
+            himedatapath = "output/hime-clean")
+# should have finer scale options for generating plots if you want to. like just returning the plot as an object instead of saving them all?
+```
+
+`-- up to this point is working --`

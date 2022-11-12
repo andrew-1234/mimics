@@ -99,3 +99,8 @@ run_hime <- function(timeseriesdata, himeoutput, himepath = file.path(getwd(), "
 #         HIME(command2) # run the hime command
 #         HIME(command3) # pipe the results into an output file with a real name
 # }
+
+# calling pwsh shortcut
+# HIME <- function(command) {
+#         system2('pwsh', command)
+# }
