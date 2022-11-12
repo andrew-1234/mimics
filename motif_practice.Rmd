@@ -172,4 +172,17 @@ testing <-
 ```
 `-- up to this point is working --`
 
-## Step 3
+## Step 3 - HIME
+Starts with hime, hime processing, and then hime_processing_cont
+
+```{r}
+# we can pass our own path 
+run_hime(timeseriesdata = "output/timeseries", 
+         himeoutput = "output/hime", 
+         himepath = "~/HIME/bin/HIME_release.jar")
+
+# or leave out himepath to use the default location of hime in your project working directory
+# run_hime(timeseriesdata, himeoutput)
+```
+
+## Step 4 - hime clean up
