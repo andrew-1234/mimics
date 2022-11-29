@@ -6,7 +6,7 @@ _Multi-Index Motif Classification for Soundscapes in R._
 
 Welcome! This package is under active development and is not complete. Check
 back soon for updates; a working alpha is planned to release by the end of 2022
-😀. This is package is an implementation of the methods provided by [Scarpelli
+😀. This package is an implementation of the methods provided by [Scarpelli
 et al. 2021](https://doi.org/10.3389/fevo.2021.738537), which is published in
 Frontiers and Ecology and Evolution. In the mean time, you can find the original
 analyses scripts [here](http://doi.org/10.5281/zenodo.4784758).
