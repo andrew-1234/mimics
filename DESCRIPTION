@@ -1,4 +1,4 @@
-Package: motifR
+Package: MIMiCS
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
@@ -12,3 +12,6 @@ License: GPL (>= 3)
 RoxygenNote: 7.2.1.9000
 Imports: 
     dplyr
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

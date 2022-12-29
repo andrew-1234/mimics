@@ -1,0 +1,7 @@
+{
+    "editor.defaultFormatter": null,
+    "prettier.resolveGlobalModules": true,
+    "[markdown]": {
+        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+    }
+}
