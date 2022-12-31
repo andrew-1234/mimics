@@ -2,7 +2,7 @@
 #'
 #' To check if a package is available on path or not
 #'
-#' @param package name of peckage to check
+#' @param package name of package to check
 #'
 #' @return todo
 #' @export

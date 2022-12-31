@@ -15,11 +15,50 @@ library(roxygen2)
 library(lintr)
 library(testthat)
 library(tidyr)
+# detach("package:lintr", unload = TRUE)
 # lint("motif_practice.qmd")
+```
+
+## Package workflow
+
+```{r}
+devtools::check()
+usethis::use_tidy_dependencies()
+```
+
+## Package dependencies and setup
+
+This depends on the use of HierarchIcal based Motif Enumeration (HIME), which is
+a variable length motif detection algorithim developed by [Gao and Lin (2017)](https://doi.org/10.1109/ICDM.2017.8356939).
+The supporting webpage is available
+[here](https://sites.google.com/site/himeicdm/).
+To use the mimics package, you will need to download the HIME source code, which is
+provided via a [GitHub repository](https://github.com/flash121123/HIME).
+Download and extract the ZIP file. By default, mimics will look for this folder
+in your current R project working directory, but you can place it anywhere on
+your computer.
+
+![hime](images/hime-1.png)
+
+An example working directory structure to get started with is shown below.
+
+```text
+.
+├── HIME-master
+├── data
+│   └── audio
+│       ├── site1
+│       ├── site2
+│       ├── site3
+│       └── site4
+├── my-project.Rproj
+└── output
 ```
 
 ## Todo
 
+- add warnings that functions will attempt to create files and folders
+- .Platform$OS.type
 - full workflow template (plug and play mode)
 - generate spectrograms
 - plots
@@ -30,6 +69,9 @@ library(tidyr)
   (automatically generated using in-text R) based on the metadata. e.g.
   - This site has _properties_ and is located _sitelocation_.
 - a way to label / confirm motifs in R??
+- should have finer scale options for generating plots if you want to. like just returning
+returning the plot as an object instead of saving them all?
+-
 
 ## Setup
 
@@ -135,19 +177,13 @@ terminal.
 find_program("ffmpeg")
 
 # check if AP is available
-find_program("AP")
+MIMiCS::find_program("AP")
 
 # if you have installed AP but the above does not work, use the code below:
 old_path <- Sys.getenv("PATH") 
 Sys.setenv(PATH = paste(old_path, "/Users/andrew/.local/bin", sep = ":"))
 # now check AP again
 # find_program("AP")
-```
-
-Now we can easily run AP commands in R:
-
-```{r}
-# AP("-help")
 ```
 
 #### Errors in sound files - what happens?
@@ -200,10 +236,12 @@ this step on your fixed audio. Remember that AP generates values for acoustic
 indices based on each 1 minute segment of audio.
 
 ```{r}
-AP_prepare("data/A2O-mini-test-rename", "output/indices-output-ap-mini")
+AP_prepare("data/A2O-mini", "output/indices-output-ap-mini")
 ```
 
 ![Example output](motif_practice_insertimage_1.png)
+
+- todo update this example output
 
 ## Step 2 - Time series
 
@@ -234,11 +272,14 @@ Motifs have to be run ecosystems and months separately.
 
 # TODO: might need a function to return the dataframe without creating outputs again? but if you need to create the dataframe again its probably safesty to re-run the subsequent steps anyway, for consistency
 
-# IMPORTANT: the time_series function relies on your file times and dates being labelled correctly. Otherwise it will not function correctly. The time series being ordered is a critical step in the process.
+# IMPORTANT: the time_series function relies on your file times and dates being
+labelled correctly. Otherwise it will not function correctly. The time series
+being ordered is a critical step in the process.
+# lubridate not found, how to add requirement to package?
 my_indices_data <-
-  motifR::time_series(
-    indicesfolder = "backup/indices-output-ap",
-    outputfolder = "output/timeseries"
+  time_series(
+    indicesfolder = "output/indices-output-ap-mini",
+    outputfolder = "output/timeseries-mini"
   )
 ```
 
@@ -248,19 +289,16 @@ Starts with hime, hime processing, and then hime_processing_cont
 
 Hime can be used in a terminal if you like. `run_hime` is just a helpful wrapper
 function that calls HIME on each of the acoustic index time series files, and
-stores the output in text files with names, and in a separate directory. Hime
-was created by:
+stores the output in text files with names, and in a separate directory. By
+default, the funciton will look for the HIME folder in your current working
+directory. But you can optionally specify a direct path using the argument
+`himepath`.
 
 ```{r}
-# we can pass our own path
 run_hime(
-  timeseriesdata = "output/timeseries",
-  himeoutput = "output/hime",
-  himepath = "~/HIME/bin/HIME_release.jar"
+  timeseriesdata = "output/timeseries-mini",
+  himeoutput = "output/hime"
 )
-
-# or leave out himepath to use the default location of hime in your project working directory
-# run_hime(timeseriesdata, himeoutput)
 ```
 
 ## Step 4 - generating some plots
@@ -274,7 +312,6 @@ motif_plots(
   outputfigures = "output/figures",
   himedatapath = "output/hime-clean"
 )
-# should have finer scale options for generating plots if you want to. like just returning the plot as an object instead of saving them all?
 ```
 
 `-- up to this point is working --`

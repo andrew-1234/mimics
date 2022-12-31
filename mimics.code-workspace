@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
-		"editor.defaultFormatter": null
+		"editor.defaultFormatter": null,
+		"cSpell.enabled": false
 	}
 }

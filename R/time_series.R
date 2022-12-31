@@ -12,7 +12,6 @@
 #' @examples
 #' time_series(indicesfolder = "output/indices-output-ap", outputfolder = "output/timeseries")
 time_series <- function(indicesfolder, outputfolder) {
-
         site_id <- NULL
         point_id <- NULL
         date_time_id <- NULL
@@ -41,9 +40,11 @@ time_series <- function(indicesfolder, outputfolder) {
         subset_list <- timeseries_prep(indicesdata = indices_all_dataframe, outputfolder = outputfolder)
 
         # run the subset function
-        subset_indices(indicesdata = indices_all_dataframe,
-                       subsetlist = subset_list,
-                       timeseriesfolder = outputfolder)
+        subset_indices(
+                indicesdata = indices_all_dataframe,
+                subsetlist = subset_list,
+                timeseriesfolder = outputfolder
+        )
         return(indices_all_dataframe)
 }
 
@@ -69,84 +70,83 @@ time_series <- function(indicesfolder, outputfolder) {
 #' @examples
 #' read_indices(files)
 read_indices <- function(files) {
-data_indices_all <- NULL
+        data_indices_all <- NULL
         for (file in files) {
+                file_name_only_3 <- basename(file)
+                # get geographic ID AKA study site/recording location ID
+                u <- strsplit(file_name_only_3, split = "_")
+                u2 <- unlist(u)
+                u2[1]
+                geo_id <- u2[2]
+                geo_id <- unique(geo_id)
 
-        file_name_only_3 <- basename(file)
-        # get geographic ID AKA study site/recording location ID
-        u <- strsplit(file_name_only_3, split = "_")
-        u2 <- unlist(u)
-        u2[1]
-        geo_id <- u2[2]
-        geo_id <- unique(geo_id)
+                # get date_time_ID
+                date_time_id <- u2[1]
 
-        # get date_time_ID
-        date_time_id <- u2[1]
+                # get month ID
+                month_1 <- strsplit(date_time_id, split = "[+]") # strsplit is regex so need []
+                month_2 <- unlist(month_1)
+                month_3 <- month_2[1]
+                month_4 <- lubridate::ymd_hms(month_3)
+                month_5 <- lubridate::month(month_4, label = TRUE, abbr = TRUE)
 
-        # get month ID
-        month_1 <- strsplit(date_time_id, split = "[+]") #strsplit is regex so need []
-        month_2 <- unlist(month_1)
-        month_3 <- month_2[1]
-        month_4 <- lubridate::ymd_hms(month_3)
-        month_5 <- lubridate::month(month_4, label = TRUE, abbr = TRUE)
+                # specify the three indices we use. this is how they are formatted from AP
+                indices <- c("AcousticComplexity", "EventsPerSecond", "TemporalEntropy")
 
-        # specify the three indices we use. this is how they are formatted from AP
-        indices <- c("AcousticComplexity", "EventsPerSecond", "TemporalEntropy")
-
-        data_indices <- read.csv(file) %>%
-                dplyr::mutate(FID = paste(file_name_only_3, ResultMinute, sep = "_")) %>%
-                # separate FID, additional pieces discarded is the suffix: "__Towsey.Acoustic.Indices.csv_0"
-                tidyr::separate(
-                        .,
-                        FID,
-                        into = c("date_time", "site", "audioID"),
-                        sep = "_",
-                        remove = F,
-                        extra = "drop"
-                ) %>%
-                tidyr::separate(
-                        .,
-                        date_time,
-                        into = c("date", "time"),
-                        sep = "T",
-                        remove = F
-                ) %>%
-                tidyr::separate(
-                        .,
-                        time,
-                        into = c("time", "offset"),
-                        sep = "[+]",
-                        remove = T
-                ) %>%
-                #mutate(., site = t[[1]][3]) %>%
-                #mutate(., point = t[[1]][4]) %>%
-                dplyr::mutate(., filepath = file) %>%
-                # TODO: add the original audio file path?
-                dplyr::mutate(., month = month_5) %>%
-                dplyr::select(
-                        .,
-                        AcousticComplexity,
-                        EventsPerSecond,
-                        TemporalEntropy,
-                        FileName,
-                        date_time,
-                        month,
-                        date,
-                        time,
-                        ResultMinute,
-                        FID,
-                        site,
-                        #point,
-                        filepath
-                ) %>%
-                # This scales the acoustic indices using the inbuilt scale() function for each file
-                dplyr::mutate_at(vars(all_of(indices)), scale) %>%
-                # now this sorts the rows by date, time, and result minute.
-                # important that the series is ordered. TODO CHECK: But i think this is working.
-                # TODO: check as.numeric(date)
-                with(., .[order(as.numeric(date), as.numeric(time), ResultMinute),])
-        # bind all the files together
-        data_indices_all <- rbind(data_indices_all, data_indices)
+                data_indices <- read.csv(file) %>%
+                        dplyr::mutate(FID = paste(file_name_only_3, ResultMinute, sep = "_")) %>%
+                        # separate FID, additional pieces discarded is the suffix: "__Towsey.Acoustic.Indices.csv_0"
+                        tidyr::separate(
+                                .,
+                                FID,
+                                into = c("date_time", "site", "audioID"),
+                                sep = "_",
+                                remove = F,
+                                extra = "drop"
+                        ) %>%
+                        tidyr::separate(
+                                .,
+                                date_time,
+                                into = c("date", "time"),
+                                sep = "T",
+                                remove = F
+                        ) %>%
+                        tidyr::separate(
+                                .,
+                                time,
+                                into = c("time", "offset"),
+                                sep = "[+]",
+                                remove = T
+                        ) %>%
+                        # mutate(., site = t[[1]][3]) %>%
+                        # mutate(., point = t[[1]][4]) %>%
+                        dplyr::mutate(., filepath = file) %>%
+                        # TODO: add the original audio file path?
+                        dplyr::mutate(., month = month_5) %>%
+                        dplyr::select(
+                                .,
+                                AcousticComplexity,
+                                EventsPerSecond,
+                                TemporalEntropy,
+                                FileName,
+                                date_time,
+                                month,
+                                date,
+                                time,
+                                ResultMinute,
+                                FID,
+                                site,
+                                # point,
+                                filepath
+                        ) %>%
+                        # This scales the acoustic indices using the inbuilt scale() function for each file
+                        dplyr::mutate_at(dplyr::vars(dplyr::all_of(indices)), scale) %>%
+                        # now this sorts the rows by date, time, and result minute.
+                        # important that the series is ordered. TODO CHECK: But i think this is working.
+                        # TODO: check as.numeric(date)
+                        with(., .[order(as.numeric(date), as.numeric(time), ResultMinute), ])
+                # bind all the files together
+                data_indices_all <- rbind(data_indices_all, data_indices)
         }
         return(data_indices_all)
 }
@@ -172,12 +172,11 @@ data_indices_all <- NULL
 #'
 #' @examples
 timeseries_prep <- function(indicesdata, outputfolder) {
-
         # one data frame per each of the three indices
         cols_all <- colnames(indicesdata)
-        AC <- cols_all[!cols_all %in% c('EventsPerSecond', 'TemporalEntropy')]
-        EV <- cols_all[!cols_all %in% c('AcousticComplexity', 'TemporalEntropy')]
-        TE <- cols_all[!cols_all %in% c('EventsPerSecond', 'AcousticComplexity')]
+        AC <- cols_all[!cols_all %in% c("EventsPerSecond", "TemporalEntropy")]
+        EV <- cols_all[!cols_all %in% c("AcousticComplexity", "TemporalEntropy")]
+        TE <- cols_all[!cols_all %in% c("EventsPerSecond", "AcousticComplexity")]
         indices_subset_list <- list(AC, EV, TE)
 
         # where to store the output
@@ -210,7 +209,6 @@ timeseries_prep <- function(indicesdata, outputfolder) {
 #' @examples
 #' subset_indices(indicesdata, subsetlist, timeseriesfolder)
 subset_indices <- function(indicesdata, subsetlist, timeseriesfolder) {
-
         # prepare the grouping values, to subset and loop based on siteID, monthID
         total_sites <- unique(indicesdata$site)
         total_months <- unique(indicesdata$month)
@@ -235,24 +233,33 @@ subset_indices <- function(indicesdata, subsetlist, timeseriesfolder) {
                                 temp4 <- temp3 %>% dplyr::arrange(date_time, ResultMinute)
 
                                 # create the output file ID
-                                file_id_new <- paste(c("TS_",
-                                                       unlist(x)[1], # gets the current index name
-                                                       "_",
-                                                       as.character(month_id), # get current month name
-                                                       "_",
-                                                       sites), # get current site name
-                                                     collapse = "")
+                                file_id_new <- paste(
+                                        c(
+                                                "TS_",
+                                                unlist(x)[1], # gets the current index name
+                                                "_",
+                                                as.character(month_id), # get current month name
+                                                "_",
+                                                sites
+                                        ), # get current site name
+                                        collapse = ""
+                                )
 
                                 # TODO: maybe put csv and txt in different folders
                                 utils::write.csv(
                                         x = temp4,
-                                        file = paste(c(file.path(timeseriesfolder, file_id_new),
-                                                ".csv"), collapse = ""))
+                                        file = paste(c(
+                                                file.path(timeseriesfolder, file_id_new),
+                                                ".csv"
+                                        ), collapse = "")
+                                )
 
                                 utils::write.table(
                                         x = temp4[1], # just need the indices values for hime
-                                        file = paste(c(file.path(timeseriesfolder, file_id_new),
-                                               ".txt"), collapse = ""),
+                                        file = paste(c(
+                                                file.path(timeseriesfolder, file_id_new),
+                                                ".txt"
+                                        ), collapse = ""),
                                         row.names = F,
                                         col.names = F
                                 )
@@ -260,10 +267,3 @@ subset_indices <- function(indicesdata, subsetlist, timeseriesfolder) {
                 }
         }
 }
-
-
-
-
-
-
-

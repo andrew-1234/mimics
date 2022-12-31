@@ -7,7 +7,7 @@
 find_program(package)
 }
 \arguments{
-\item{package}{name of peckage to check}
+\item{package}{name of package to check}
 }
 \value{
 todo
