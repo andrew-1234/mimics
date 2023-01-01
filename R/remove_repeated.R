@@ -1,6 +1,6 @@
 #' Iteration function
 #'
-#' This might be the most complicated function here, but nothing to worry about. iteration1 will be used when cleaning up the motifs seeing there are lots of repetition. Again, the authors of the paper that did the algorithm and everything propose a different solution to cleaning them up, but this was the way I found to make it easier and straightforward when dealing with heaps of data as I was. This function is assigning the word “repeated” to motifs that overlap.
+#' iteration1 will be used when cleaning up the motifs to remove repetition. This function is assigning the word “repeated” to motifs that overlap.
 #'
 #' @param motif_results_df a motif results df
 #'
@@ -10,24 +10,24 @@
 #' @examples
 iteration1 <- function(motif_results_df) {
         for (row in 1:nrow(motif_results_df)) {
-                motif_results_df$overlap[row] = case_when(
+                motif_results_df$overlap[row] <- dplyr::case_when(
                         motif_results_df$Start[row + 1] <= motif_results_df$Start[row] &
                                 motif_results_df$End[row + 1] >= motif_results_df$End[row] ~ "repeated",
                         motif_results_df$Start[row +
-                                                       1] <= motif_results_df$End[row] &
+                                1] <= motif_results_df$End[row] &
                                 motif_results_df$End[row + 1] <= motif_results_df$End[row] ~ "repeated",
                         motif_results_df$Start[row +
-                                                       1] <= motif_results_df$End[row] &
+                                1] <= motif_results_df$End[row] &
                                 motif_results_df$End[row + 1] - motif_results_df$End[row] <= 30 ~ as.character(motif_results_df$Distance[row +
-                                                                                                                                                 1]),
+                                1]),
                         motif_results_df$Start[row +
-                                                       1] <= motif_results_df$End[row] &
+                                1] <= motif_results_df$End[row] &
                                 motif_results_df$Start[row + 1] - motif_results_df$Start[row] <= 30 ~ as.character(motif_results_df$Distance[row +
-                                                                                                                                                     1]),
+                                1]),
                         motif_results_df$Start[row +
-                                                       1] - motif_results_df$Start[row] <= 30 &
+                                1] - motif_results_df$Start[row] <= 30 &
                                 motif_results_df$Start[row + 1] - motif_results_df$End[row] <= 30 ~ as.character(motif_results_df$Distance[row +
-                                                                                                                                                   1]),
+                                1]),
                         TRUE ~ as.character(motif_results_df$Distance[row])
                 )
         }
@@ -49,12 +49,12 @@ iteration1 <- function(motif_results_df) {
 #' @examples
 remove_repeated <- function(motif_results_df) {
         result <- iteration1(motif_results_df) %>%
-                filter(., .$overlap != "repeated") %>%
+                dplyr::filter(., .$overlap != "repeated") %>%
                 with(., .[order(Start), ]) %>%
                 iteration1(.) %>%
-                filter(., .$overlap != "repeated") %>%
+                dplyr::filter(., .$overlap != "repeated") %>%
                 with(., .[order(Start), ]) %>%
                 iteration1(.) %>%
-                filter(., .$overlap != "repeated") %>%
+                dplyr::filter(., .$overlap != "repeated") %>%
                 with(., .[order(Start), ])
 }

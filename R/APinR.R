@@ -90,7 +90,7 @@ AP_prepare <- function(path_to_audio, path_to_output) {
                 cat("No.", "Cancelling action.")
         } else {
                 cat("Yes.", "Continuing...")
-                motifR::get_audio_files(dirs = dirs, base_output_directory = base_output_directory)
+                MIMiCS::get_audio_files(dirs = dirs, base_output_directory = base_output_directory)
         }
 }
 
@@ -157,7 +157,7 @@ get_audio_files <- function(dirs, base_output_directory) {
                                         )
 
                                 # finally, execute the command
-                                motifR::AP(command)
+                                MIMiCS::AP(command)
                         }
                 }
         }

@@ -15,7 +15,7 @@ AP_prepare(path_to_audio, path_to_output)
 returns AP generated files
 }
 \description{
-Generates acoustic indices using AP with Towsey config, for all `flac` files detected in the supplied path.
+Generates acoustic indices using AP with Towsey config, for all \code{flac} files detected in the supplied path.
 }
 \examples{
 AP_prepare("data/my_audio", "output/indices")

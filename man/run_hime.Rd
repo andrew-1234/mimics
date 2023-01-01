@@ -7,7 +7,7 @@
 run_hime(
   timeseriesdata,
   himeoutput,
-  himepath = file.path(getwd(), "HIME/bin/HIME_release.jar")
+  himepath = file.path(getwd(), "HIME-master/bin/HIME_release.jar")
 )
 }
 \arguments{

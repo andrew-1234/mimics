@@ -23,7 +23,8 @@ library(tidyr)
 
 ```{r}
 devtools::check()
-usethis::use_tidy_dependencies()
+usethis::use_tidy_description()
+# usethis::use_package("ggplot2", min_version = TRUE)
 ```
 
 ## Package dependencies and setup
@@ -59,6 +60,8 @@ An example working directory structure to get started with is shown below.
 
 - add warnings that functions will attempt to create files and folders
 - .Platform$OS.type
+  - check and set function depending on OS
+  - or make all PS functions
 - full workflow template (plug and play mode)
 - generate spectrograms
 - plots
@@ -71,7 +74,6 @@ An example working directory structure to get started with is shown below.
 - a way to label / confirm motifs in R??
 - should have finer scale options for generating plots if you want to. like just returning
 returning the plot as an object instead of saving them all?
--
 
 ## Setup
 
@@ -86,7 +88,7 @@ Testing setup in progress.
 ## Install/reinstall
 
 ```{r}
-detach("package:mimics", unload = TRUE)
+detach("package:MIMiCS", unload = TRUE)
 install("/Users/andrew/Documents/GitHub/mimics")
 library(MIMiCS)
 ```
@@ -245,7 +247,9 @@ AP_prepare("data/A2O-mini", "output/indices-output-ap-mini")
 
 ## Step 2 - Time series
 
-Construct a time series for the acoustic indices
+Construct a time series for the acoustic indices. Here the data is output to a
+folder but we also save it to a data frame (which will be used in step 4). #TODO
+explaing this better / do we need to have both options?
 
 Motifs have to be run ecosystems and months separately.
 
@@ -273,9 +277,9 @@ Motifs have to be run ecosystems and months separately.
 # TODO: might need a function to return the dataframe without creating outputs again? but if you need to create the dataframe again its probably safesty to re-run the subsequent steps anyway, for consistency
 
 # IMPORTANT: the time_series function relies on your file times and dates being
-labelled correctly. Otherwise it will not function correctly. The time series
-being ordered is a critical step in the process.
-# lubridate not found, how to add requirement to package?
+# labelled correctly. Otherwise it will not function correctly. The time series
+# being ordered is a critical step in the process.
+
 my_indices_data <-
   time_series(
     indicesfolder = "output/indices-output-ap-mini",
@@ -307,11 +311,27 @@ Generates some time series / motif plots. Also outputs the motifs.csv files
 (motif + timeseries data combined).
 
 ```{r}
-motif_plots(
+debug(MIMiCS::motif_plots)
+# undebug(MIMiCS::motif_plots)
+MIMiCS::motif_plots(
   data_indices_all = my_indices_data,
   outputfigures = "output/figures",
   himedatapath = "output/hime-clean"
-)
+)  
+myfunz <- function(data) {
+  data2 <- data %>% dplyr::arrange(., mpg)
+  print(head(data2))
+  for(cylinder in unique(data$cyl)) {
+    print("hello")
+    print(cylinder)
+    data2 <- data %>% 
+    dplyr::mutate(., newfactor = ifelse(cyl == 8, "1", "2")) %>%
+    dplyr::arrange(., newfactor)
+    print(data2)
+  }
+}
+myfunz(mtcars)
+dplyr::glimpse(mtcars)
 ```
 
 `-- up to this point is working --`

@@ -2,7 +2,7 @@
 % Please edit documentation in R/find_program.R
 \name{find_program}
 \alias{find_program}
-\title{Runs `which` package}
+\title{Runs \code{which} package}
 \usage{
 find_program(package)
 }
