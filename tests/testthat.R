@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(motifR)
+library(MIMiCS)
 
-test_check("motifR")
+test_check("MIMiCS")

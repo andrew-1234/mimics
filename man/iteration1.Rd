@@ -13,5 +13,5 @@ iteration1(motif_results_df)
 returns a motif results df
 }
 \description{
-This might be the most complicated function here, but nothing to worry about. iteration1 will be used when cleaning up the motifs seeing there are lots of repetition. Again, the authors of the paper that did the algorithm and everything propose a different solution to cleaning them up, but this was the way I found to make it easier and straightforward when dealing with heaps of data as I was. This function is assigning the word “repeated” to motifs that overlap.
+iteration1 will be used when cleaning up the motifs to remove repetition. This function is assigning the word “repeated” to motifs that overlap.
 }

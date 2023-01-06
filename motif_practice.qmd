@@ -10,20 +10,22 @@ editor_options:
 ## Package stuff setup
 
 ```{r}
+# development stuff
 library(devtools)
 library(roxygen2)
 library(lintr)
 library(testthat)
+library(httpgd)
+
+# other
 library(tidyr)
-# detach("package:lintr", unload = TRUE)
-# lint("motif_practice.qmd")
 ```
 
 ## Package workflow
 
 ```{r}
 devtools::check()
-usethis::use_tidy_description()
+# usethis::use_tidy_description()
 # usethis::use_package("ggplot2", min_version = TRUE)
 ```
 
@@ -287,6 +289,12 @@ my_indices_data <-
   )
 ```
 
+Saving the csv here for testing purposes:
+
+```{r}
+write.csv(my_indices_data, "tests/testthat/testdata/my_indices_data.csv")
+```
+
 ## Step 3 - HIME
 
 Starts with hime, hime processing, and then hime_processing_cont
@@ -350,4 +358,5 @@ feature_extraction(
   indicespath = "output/indices-output-ap",
   outwavelet = "output/wavelets"
 )
+
 ```
