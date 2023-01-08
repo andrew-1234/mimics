@@ -21,6 +21,14 @@ library(httpgd)
 library(tidyr)
 ```
 
+Set up the plotting server:
+
+```{r}
+hgd() # start the server
+httpgd::hgd_browse() # open the browser
+dev.off() # close the server
+```
+
 ## Package workflow
 
 ```{r}
@@ -292,7 +300,11 @@ my_indices_data <-
 Saving the csv here for testing purposes:
 
 ```{r}
-write.csv(my_indices_data, "tests/testthat/testdata/my_indices_data.csv")
+write.csv(my_indices_data, "tests/testthat/testdata/my_indices_data.csv", row.names = FALSE)
+
+my_indices_data <- read.csv(file =
+"tests/testthat/testdata/my_indices_data.csv")
+colnames(my_indices_data)
 ```
 
 ## Step 3 - HIME
@@ -305,6 +317,10 @@ stores the output in text files with names, and in a separate directory. By
 default, the funciton will look for the HIME folder in your current working
 directory. But you can optionally specify a direct path using the argument
 `himepath`.
+
+- TODO Add a warning: output directory contains files. May overwrite existing file
+types please check this is what you want to do. Or, add an option that if
+duplicate names detected, add suffix to file name.
 
 ```{r}
 run_hime(

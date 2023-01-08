@@ -1,5 +1,4 @@
 # File: test-function1.R
-context("complete_time_series")
 data <- read.csv("tests/testthat/testdata/my_indices_data.csv")
 
 # or use mtcars?
