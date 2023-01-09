@@ -1,0 +1,9 @@
+"","id","instance","Start","End","overlap","length","action"
+"1",1,"1_motif",6,40,NA,34,NA
+"2",3,"3_motif",6,42,NA,36,NA
+"3",2,"2_motif",18,52,NA,34,NA
+"4",4,"4_motif",65,99,NA,34,NA
+"5",1,"1_match",134,168,NA,34,NA
+"6",3,"3_match",135,169,NA,34,NA
+"7",2,"2_match",141,175,NA,34,NA
+"8",4,"4_match",193,227,NA,34,NA

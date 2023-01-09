@@ -239,13 +239,6 @@ hime_file_is <- function(df) {
 }
 
 # test that hime_file_is returns the right path
-asdf <- dfs_motif[[1]]
-hime_file_is(asdf)
-
-test_that("hime_file_is returns the right path", {
-  expect_equal(hime_file_is(asdf), "/Users/andrew/Documents/GitHub/mimics/output/hime/Res_TS_AcousticComplexity_Dec_Bon-Bon-Station-Dry-A.txt")
-})
-
 # run this on dfs_motif
 lapply(dfs_motif, hime_file_is)
 
@@ -394,6 +387,11 @@ test_that("each row is less than the next row", {
 # add an overlap column = NA
 motif_results_12 <- motif_results_11 %>%
   dplyr::mutate(., overlap = NA)
+# this is a good practice dataset for testing the overlap functions
+write.csv(
+  motif_results_12,
+  "tests/testthat/testdata/motif_results_12.csv"
+)
 
 # run the remove_repeated function
 # when overlappying, the longer motif is kept (e.g. choice between keeping
