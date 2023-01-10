@@ -16,6 +16,7 @@ library(roxygen2)
 library(lintr)
 library(testthat)
 library(httpgd)
+library(lobstr) # show details of objects  in a visual way 
 
 # other
 library(tidyr)

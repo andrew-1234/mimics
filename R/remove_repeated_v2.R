@@ -1,29 +1,11 @@
-# first function
-# perform first check for overlap
+remove_repeated_prep <- function(data) {
+  # create length column
+  data$length <- data$End - data$Start
 
-practice <- motif_results_12[3:7]
-
-# create length column
-practice$length <- practice$End - practice$Start
-
-# create action column
-practice$action <- NA
-
-row <- 1
-
-# make some test DFs
-# practice_first_run is to make sure the first run works
-practice_first_run <- practice
-# practice_fresh_run is to make sure the entire function works
-practice_fresh_run <- practice
-
-
-# make sure practice_first_run$action is all NA
-tryCatch(test_that("Check if practice_first_run$action is all NA", {
-  expect_true(any(is.na(practice_first_run$action)))
-}), error = function(e) {
-  print("practice_first_run$action is not all NA")
-})
+  # create action column
+  data$action <- NA
+  return(data)
+}
 
 function_remove_loop <- function(practice) {
   for (row in seq_along(practice$id)) {
@@ -33,7 +15,7 @@ function_remove_loop <- function(practice) {
       message("last row")
     } else {
       # check if the start of the next row is less than the end of the current row
-      if (practice$Start[row + 1] <= practice$End[row]) {
+      if (practice$Start[row + 1] < practice$End[row]) {
         message("overlap")
         # determine the range
         y_values <- c(practice$End[row], practice$End[row + 1])
@@ -70,8 +52,6 @@ function_remove_loop <- function(practice) {
   }
   return(practice)
 }
-asd <- function_remove_loop(practice_fresh_run)
-function_remove_v1(asd)
 
 function_remove_v1 <- function(practice) {
   # remove rows then run the loop
@@ -108,12 +88,30 @@ test_that("function_remove_v1 works", {
 input_df <- practice_fresh_run
 input_df <- output_df
 
+# recursion_counter <- 0
+
 remove_repeated_master <- function(input_df) {
-  recursion_counter <<- recursion_counter + 1
+  # recursion_counter <<- recursion_counter + 1
+
+  # check if dataframe is empty, and if so, issue a warning
+  # the expr_label should return the name of the df which had no data
+  if (nrow(input_df) == 0) {
+    msg <- paste0("The input ", rlang::expr_label(substitute(input_df)), "contains no data.")
+    warning(msg)
+    stop()
+  } else if (condition) {
+    selected
+  }
+
+  # check if only 1 row, and if so, return unmodified data frame
+  if (nrow(input_df) == 1) {
+    return(input_df)
+  }
+
   # base case: if practice$action does not contain "remove" and is not all NA
   if (!any(input_df$action %in% "remove") && !all(is.na(input_df$action))) {
     print("base case, no more removal needed")
-    print(paste("The function has recursed", recursion_counter, "times."))
+    # print(paste("The function has recursed", recursion_counter, "times."))
     return(input_df)
   } else {
     # first run condition
@@ -121,15 +119,14 @@ remove_repeated_master <- function(input_df) {
       message("first run:")
       message("first run:")
       message("first run:")
-      recursion_counter <- -0
-      output_df <- suppressMessages(function_remove_v1(input_df))
+      output_df <- suppressMessages(function_remove_v1(remove_repeated_prep(input_df)))
       remove_repeated_master(output_df)
     } else {
       # not first run, so check the base case
       # if practice$action contains "remove"
       if (!any(input_df$action %in% "remove")) {
         print("base case, no more removal needed")
-        print(paste("The function has recursed", recursion_counter, "times."))
+        # print(paste("The function has recursed", recursion_counter, "times."))
         # return the data frame
         return(input_df)
       } else {
@@ -141,49 +138,3 @@ remove_repeated_master <- function(input_df) {
     }
   }
 }
-
-
-asdf <- remove_repeated_master(practice_fresh_run)
-
-practice_fresh_run_big <- rbind(
-  practice_fresh_run,
-  practice_fresh_run,
-  practice_fresh_run
-)
-test1 <- function_remove_loop(practice_fresh_run_big)
-test2 <- function_remove_v1(practice_fresh_run_big)
-test2_2 <- function_remove_v1(test2)
-test2_3 <- function_remove_v1(test2_2)
-test2_4 <- function_remove_v1(test2_3)
-test2_5 <- function_remove_v1(test2_4)
-test2_6 <- function_remove_v1(test2_5)
-
-test3 <- remove_repeated_master(practice_fresh_run_big)
-# why is there na in test1 but not in test2...?
-nrow(practice_fresh_run_big)
-nrow(test1)
-nrow(test2)
-
-# make sure all edge cases are covered like if == or only one row or no rows
-# etc.
-# if nrow = 1 does it end?
-# check samsung notes
-
-#--------------------------------------------
-# Plotting to help visualise overlaps and how they are handled
-
-# convert practice dataset to long format based on the start and end columns
-practice_plot <- practice %>%
-  pivot_longer(
-    cols = c(Start, End),
-    names_to = "Start_End",
-    values_to = "Value"
-  )
-
-# plot the long format data
-ggplot2::ggplot(data = practice_plot, ggplot2::aes(x = Value, y = instance, color = as.character(id), group = instance)) +
-  ggplot2::geom_line(size = 30) +
-  # ggplot2::facet_wrap(~Name, ncol = 1) +
-  ggplot2::theme_bw() +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)) +
-  ggplot2::labs(x = "asdf", y = "asdf", color = "")

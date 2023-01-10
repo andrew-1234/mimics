@@ -125,7 +125,7 @@ for (i in seq_along(split_data_ts_pivot)) {
 # test that output/figures contains the right number of plots
 # not a good test because output/figures can contain lots of things
 test_that("output/figures contains the right number of plots", {
-  expect_equal(length(list.files(pathid)), length(split_data_ts_pivot))
+  # expect_equal(length(list.files(pathid)), length(split_data_ts_pivot))
 })
 
 # Function 3: hime_series / hime_indices
@@ -244,6 +244,9 @@ lapply(dfs_motif, hime_file_is)
 
 ###
 # Step 2.2 for each data frame in list, read the hime file
+# For testing purposes
+full_path <- "/Users/andrew/Documents/GitHub/mimics/output/hime-clean/Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B.txt"
+
 motif_results <- utils::read.table(full_path, row.names = NULL)
 # Rename the columns
 motif_results_2 <- motif_results %>%
@@ -385,13 +388,9 @@ test_that("each row is less than the next row", {
 })
 
 # add an overlap column = NA
+# this dataset saved for testing in testdata as Remove_repeated_df1
 motif_results_12 <- motif_results_11 %>%
   dplyr::mutate(., overlap = NA)
-# this is a good practice dataset for testing the overlap functions
-write.csv(
-  motif_results_12,
-  "tests/testthat/testdata/motif_results_12.csv"
-)
 
 # run the remove_repeated function
 # when overlappying, the longer motif is kept (e.g. choice between keeping
@@ -406,6 +405,8 @@ write.csv(
 # so that's why you can work with one motif df per month and still know where
 # things came from
 motif_results_13 <- MIMiCS::remove_repeated(motif_results_12)
+
+motif_results_13 <- remove_repeated_master(motif_results_12)
 
 # call the function recursively make sure all overlaps are removed
 # only fully overlapping things or fully contained overlaps are removed
