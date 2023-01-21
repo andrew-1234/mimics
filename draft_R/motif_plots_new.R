@@ -259,16 +259,102 @@ hime_file_is <- function(df) {
   return(full_path)
 }
 
-# test that hime_file_is returns the right path
-# run this on dfs_motif
-lapply(dfs_motif, hime_file_is)
+# function to create a list of matching hime file names
+# and return a list of hime files
+read_hime_files <- function(df) {
+  hime_files <- list()
+  hime_files <- lapply(df, hime_file_is)
+  motif_results <- list()
+  motif_results <- lapply(hime_files, function(x) {
+    utils::read.table(x, row.names = NULL)
+  })
+  return(motif_results)
+}
 
+motif_results <- read_hime_files(dfs_motif)
+
+# confirm that length of dfs_motif matchs length of motif_results
+test_that("length of dfs_motif matchs length of motif_results", {
+  expect_equal(length(dfs_motif), length(motif_results))
+})
+
+# for each dataframe, rename the columns
+motif_results_2 <- list()
+motif_results_2 <- lapply(motif_results, function(x) {
+  x %>%
+    dplyr::rename(
+      .,
+      FirstInstance_Start = V1,
+      FirstInstance_End = V2,
+      SecondInstance_Start = V3,
+      SecondInstance_End = V4,
+      Length = V5,
+      Distance = V6
+    )
+})
+
+# check that each data frame in the list contains rows
+test_that("each data frame in the list contains rows", {
+  lapply(motif_results_2, function(x) {
+    expect_true(nrow(x) > 0)
+  })
+})
+
+# test that each data frame in the list contains the right number of columns
+# with the correct names
+test_that("each data frame in the list contains the right number of columns", {
+  lapply(motif_results_2, function(x) {
+    expect_equal(ncol(x), 6)
+    expect_equal(names(x), c(
+      "FirstInstance_Start",
+      "FirstInstance_End",
+      "SecondInstance_Start",
+      "SecondInstance_End",
+      "Length",
+      "Distance"
+    ))
+  })
+})
+# Create a function that adds a count column and filters by distance column
+# Remember - why are we filtering by distance?
+add_id_column <- function(df) {
+  df_2 <- df %>%
+    dplyr::mutate(., id = 1:as.numeric(dplyr::count(.)))
+
+  df_3 <- df_2 %>%
+    dplyr::filter(., Distance <= 5)
+
+  # test that distance column is <= 5
+  test_that("distance column is <= 5", {
+    expect_true(all(motif_results_4$Distance <= 5))
+  })
+  return(df_3)
+}
+
+# apply the add_id_column function to each data frame in the list
+motif_results_3 <- list()
+motif_results_3 <- lapply(motif_results_2, add_id_column)
+
+# continue with function unless row count is 0
+# add a skip function or something here, or a check that the row count is > 0 if
+# else condition
+
+tryCatch(
+  test_that("motif_results still contains rows", {
+    expect_true(nrow(motif_results_3) > 0)
+  }),
+  error = function(e) {
+    message("🚨 motif_results is empty after filtering for distance <= 5")
+  }
+)
 ###
 # Step 2.2 for each data frame in list, read the hime file
+
 # For testing purposes
 full_path <- "/Users/andrew/Documents/GitHub/mimics/output/hime-clean/Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B.txt"
 
 motif_results <- utils::read.table(full_path, row.names = NULL)
+
 # Rename the columns
 motif_results_2 <- motif_results %>%
   dplyr::rename(
@@ -549,17 +635,88 @@ write.csv(
 # three acoustic indices. These should be in a different folder I think. And the
 # below plots which are index specific should be in another folder
 
-# Step 7.1 create main plot data frame
+# Step 7.1 create main plot data frames
+# Before, the first col was called Index which made this easier
+# But I will need the index name for running this in a loop for making the
+# titles
+# I'll save it as a variable, and rename the first column to Index
+# i added ungroup here otherwise it was adding motif column in. not sure if it
+# is needed or not.
+index <- names(dfs_motif_sub_2)[1]
 
-# Step 7.2 create the plot data frame for the geom_lines
-plot_motif <-
-  dplyr::select(complete_inter, motif, position, Index) %>%
-  dplyr::rename(., reference = motif) %>%
-  dplyr::filter(reference != "NA") %>%
+dfs_motif_sub_3 <- dfs_motif_sub_2
+names(dfs_motif_sub_3)[1] <- "Index"
+
+plot_ts <- dfs_motif_sub_3 %>%
+  dplyr::ungroup() %>%
+  dplyr::select(Index, reference, position, date, time) %>%
   tidyr::separate(.,
-          reference,
-          into = c("number", "what"),
-          remove = F
+    reference,
+    into = c("number", "what"),
+    remove = FALSE
   )
 
-# How do the motifs get matched back to the file id??
+# Step 7.2 create the plot data frame for the geom_lines
+plot_motif <- dfs_motif_sub_3 %>%
+dplyr::ungroup() %>%
+  dplyr::select(motif, position, Index) %>%
+  dplyr::rename(., reference = motif) %>%
+  dplyr::filter(reference != "NA") %>%
+  tidyr::separate(reference,
+    into = c("number", "what"),
+    remove <- FALSE,
+    sep = "_"
+  )
+
+# Construct the plot
+# line parts commented out weren't working or something
+
+ggplot2::ggplot(plot_ts, ggplot2::aes(x = position, y = Index)) +
+  ggplot2::geom_line(ggplot2::aes(colour = reference, linetype = reference), colour = "grey") +
+  # geom_vline(xintercept = line_intercept1$position, linetype = "dotted") +
+  # geom_text(data = line_intercept1,
+  #           aes(label = time, y = 10, size = 1),
+  #           check_overlap = T) +
+  # geom_vline(xintercept = line_intercept2$position, linetype = "dotted") +
+  # geom_text(data = line_intercept2,
+  #           aes(label = time, y = 10, size = 1),
+  #           check_overlap = T) +
+  ggplot2::scale_linetype_manual(values = "dotted") +
+  ggplot2::geom_line(data = plot_motif, ggplot2::aes(
+    x = position,
+    y = Index,
+    colour = reference
+  )) +
+  ggplot2::scale_color_manual(values = c(replicate(nrow(
+    motif_results
+  ), "#2ca25f"))) +
+  ggplot2::theme_classic() +
+  ggplot2::labs(title = paste(index, sep = " ")) +
+  ggplot2::theme(
+    legend.title = ggplot2::element_blank(),
+    axis.title.x = ggplot2::element_blank(),
+    axis.text = ggplot2::element_blank(),
+    axis.ticks = ggplot2::element_blank(),
+    legend.position = "none"
+  )
+
+  pathid
+
+# The order of naming is different here to previously?
+create_file_name_index_plot <- function(df) {
+  df <- dfs_motif_sub_2
+  month_id <- unique(df$month)
+  site_id <- unique(df$site)
+  index_id <- names(df)[1]
+  file_id <- paste0(
+    site_id, "_",
+    month_id, "_",
+    index_id, "_",
+    "indicespertime.jpg"
+  )
+  return(file_id)
+}
+
+ggplot2::ggsave(
+  get_data_path(pathid, create_file_name_index_plot(dfs_motif_sub_3))
+)
