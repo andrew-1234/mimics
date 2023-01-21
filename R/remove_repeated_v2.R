@@ -52,6 +52,18 @@ function_remove_loop <- function(practice) {
   }
   return(practice)
 }
+# Pseudo code:
+# 1. remove rows where action is "remove"
+# 2. sort by Start column
+# 3. run the loop
+# 4. return the data frame
+# 5. check if the data frame contains "remove" in the action column
+# 6. if it does, run the function again
+# 7. if it does not, return the data frame
+# 8. if the data frame is empty, issue a warning
+# 9. if the data frame has only 1 row, return the data frame
+# 10. if the data frame has no "remove" in the action column, return the data
+#     frame
 
 function_remove_v1 <- function(practice) {
   # remove rows then run the loop
@@ -69,7 +81,7 @@ function_remove_v1 <- function(practice) {
 }
 
 
-test <- function_remove_v1(practice)
+# test <- function_remove_v1(practice)
 
 #--------------------------------------------
 # Tests:
@@ -77,30 +89,31 @@ test <- function_remove_v1(practice)
 # and does the recursion work
 
 # create a test file
-write.csv(practice, "tests/testthat/testdata/rmv_rpt_test1.csv")
-test_that("function_remove_v1 works", {
-  # expect that it returns a dataframe
-  expect_is(function_remove_v1(practice), "data.frame")
-})
+# write.csv(practice, "tests/testthat/testdata/rmv_rpt_test1.csv")
+# test_that("function_remove_v1 works", {
+#   # expect that it returns a dataframe
+#   expect_is(function_remove_v1(practice), "data.frame")
+# })
 
 #--------------------------------------------
 # now create the main function
-input_df <- practice_fresh_run
-input_df <- output_df
+# input_df <- practice_fresh_run
+# input_df <- output_df
 
 # recursion_counter <- 0
 
 remove_repeated_master <- function(input_df) {
   # recursion_counter <<- recursion_counter + 1
 
+  # run remove repeated prep if action column doesn't exist
+  if (!"action" %in% colnames(input_df)) {
+    input_df <- remove_repeated_prep(input_df)
+  }
   # check if dataframe is empty, and if so, issue a warning
   # the expr_label should return the name of the df which had no data
   if (nrow(input_df) == 0) {
     msg <- paste0("The input ", rlang::expr_label(substitute(input_df)), "contains no data.")
-    warning(msg)
-    stop()
-  } else if (condition) {
-    selected
+    stop(msg)
   }
 
   # check if only 1 row, and if so, return unmodified data frame
@@ -117,9 +130,9 @@ remove_repeated_master <- function(input_df) {
     # first run condition
     if (all(is.na(input_df$action))) {
       message("first run:")
-      message("first run:")
-      message("first run:")
-      output_df <- suppressMessages(function_remove_v1(remove_repeated_prep(input_df)))
+      output_df <- suppressMessages(
+        function_remove_v1(input_df)
+      )
       remove_repeated_master(output_df)
     } else {
       # not first run, so check the base case

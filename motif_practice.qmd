@@ -16,7 +16,9 @@ library(roxygen2)
 library(lintr)
 library(testthat)
 library(httpgd)
-library(lobstr) # show details of objects  in a visual way 
+library(lobstr) # show details of objects (like str) in a visual way
+# wrap a function in ast() to see the structure 
+library(bannerCommenter) # for banner comments
 
 # other
 library(tidyr)
@@ -28,6 +30,10 @@ Set up the plotting server:
 hgd() # start the server
 httpgd::hgd_browse() # open the browser
 dev.off() # close the server
+plot(cars)
+
+```
+
 ```
 
 ## Package workflow
@@ -116,10 +122,13 @@ library(MIMiCS)
 In this example workflow we will use data available from the A2O.
 
 If you would like to download data from the A20, follow this guide (TODO
-refactor this into own section)
+refactor this into own section).
+
+Note, if you're using a folder like me called A2O, make sure you double check
+whether you are using a capital O or a zero 0. I've made that mistake :)
 
 ```{r}
-list.files(path = "data/A20", recursive = TRUE)
+list.files(path = "data/A2O-mini", recursive = TRUE)
 ```
 
 ```text
@@ -192,7 +201,7 @@ find_program("ffmpeg")
 # check if AP is available
 MIMiCS::find_program("AP")
 
-# if you have installed AP but the above does not work, use the code below:
+# if you have installed AP but the above does not work, try the code below:
 old_path <- Sys.getenv("PATH") 
 Sys.setenv(PATH = paste(old_path, "/Users/andrew/.local/bin", sep = ":"))
 # now check AP again
@@ -336,13 +345,15 @@ Generates some time series / motif plots. Also outputs the motifs.csv files
 (motif + timeseries data combined).
 
 ```{r}
-debug(MIMiCS::motif_plots)
+debugOnce(MIMiCS::motif_plots)
 # undebug(MIMiCS::motif_plots)
 MIMiCS::motif_plots(
   data_indices_all = my_indices_data,
   outputfigures = "output/figures",
   himedatapath = "output/hime-clean"
-)  
+) 
+
+
 myfunz <- function(data) {
   data2 <- data %>% dplyr::arrange(., mpg)
   print(head(data2))

@@ -114,7 +114,7 @@ test_that("function remove_repeated_master works with 1 row df", {
 # test that remove_repeated_master works with a 0 length df
 empty_df <- remove_repeated_df1[0, ]
 test_that("function remove_repeated_master works with 0 row df", {
-  # expect_message(remove_repeated_master(empty_df))
+  expect_error(remove_repeated_master(empty_df), "contains no data.")
 })
 
 # test that remove_repeated_master works as expected on the practice data frame
@@ -159,8 +159,14 @@ test_that("function_remove_loop works on big df", {
 # asdf <- read.table("/Users/andrew/Documents/GitHub/mimics/output/hime-clean/Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B.txt")
 # remove_repeated(remove_repeated_df1)
 
-# -------
+# in progress ----
 # if a dataframe of length 0 row in list, it should be skipped
 test_that("function_remove_loop skips dfs with 0 rows and continues", {
 
 })
+
+# TODO: If there is a zero length DF, stop() is issued. When the
+# remove_repeated_master function is used with a loop or lapply, test that it
+# will skip the zero length DF but continue to the next DF in the list
+# Perhaps the test case for zero length should come BEFORE the remove function
+# is called? Not sure.

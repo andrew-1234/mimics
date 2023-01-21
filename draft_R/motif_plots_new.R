@@ -22,7 +22,23 @@
 
 # test that my_indices_data contains the right columns
 test_that("my_indices_data contains the right columns", {
-  expect_equal(colnames(my_indices_data), c("AcousticComplexity", "EventsPerSecond", "TemporalEntropy", "FileName", "date_time", "month", "date", "time", "ResultMinute", "FID", "site", "filepath"))
+  expect_equal(
+    colnames(my_indices_data),
+    c(
+      "AcousticComplexity",
+      "EventsPerSecond",
+      "TemporalEntropy",
+      "FileName",
+      "date_time",
+      "month",
+      "date",
+      "time",
+      "ResultMinute",
+      "FID",
+      "site",
+      "filepath"
+    )
+  )
 })
 
 # Step 1: split the data into sites and months
@@ -103,6 +119,7 @@ plot_ts <- function(x, name) {
 ele_names <- names(split_data_ts_pivot)
 
 # make names suitable for file naming use
+# remove dots and replace with underscores
 ele_names <- gsub("\\.", "_", ele_names)
 
 # add the suffix now
@@ -123,7 +140,7 @@ for (i in seq_along(split_data_ts_pivot)) {
 }
 
 # test that output/figures contains the right number of plots
-# not a good test because output/figures can contain lots of things
+# TODO: not a good test because output/figures can contain lots of things
 test_that("output/figures contains the right number of plots", {
   # expect_equal(length(list.files(pathid)), length(split_data_ts_pivot))
 })
@@ -166,7 +183,8 @@ for (i in dfs_so_far) {
   # first column should always be an index
   # rename index position 1 to Index
   # TODO not sure if this was necessary? but was in the old steps
-  # on HOLD for now
+  # on HOLD for now, and first index position renames to the actual index
+  # abbreviation
 
   newname1 <- paste0(i, "_", "AC")
   newname2 <- paste0(i, "_", "EV")
@@ -192,19 +210,21 @@ test_that("dfs_motif contains the right number of columns", {
     expect_equal(ncol(x), ncol(split_data_ts[[1]]) - 2 + 5)
   })
 })
-# pre step 2:
+
+# Step 2: import motif data for each site/month/index
+
 # replace . with _ in the names of dfs_motif
 # so that the names can be used to generate file names
 names(dfs_motif) <- gsub("\\.", "_", names(dfs_motif))
 
-# test that names(df_motif) end in _AC, _EV, or _TE
+# test that names(dfs_motif) end in _AC, _EV, or _TE
 test_that("names(dfs_motif) end in _AC, _EV, or _TE", {
   lapply(names(dfs_motif), function(x) {
     expect_true(grepl("_AC$|_EV$|_TE$", x))
   })
 })
 
-# Step 2: import motif data for each site/month/inex
+
 # Step 2.1 generate the hime file import path
 
 # create a function that generates a path to matching hime file for each data
@@ -223,6 +243,7 @@ hime_file_is <- function(df) {
   file_id <- paste0("Res_TS_", index_id, "_", month_id, "_", site_id, ".txt")
 
   # where is the hime data sotred?
+  # TODO: double check that hime-clean will always be the right folder
   himepath <- "output/hime-clean"
 
   # use full path to hime file
@@ -269,6 +290,10 @@ test_that("motif_results_2 contains the right number of columns and correct name
   expect_equal(ncol(motif_results_2), 6)
   expect_equal(names(motif_results_2), c("FirstInstance_Start", "FirstInstance_End", "SecondInstance_Start", "SecondInstance_End", "Length", "Distance"))
 })
+
+# Step 3 wrangle the hime data
+# Step 3.1 rename the columns
+# Step 3.2 pivot and mutate
 
 # add an id column to the motif_results_2 data frame with a sequential count
 motif_results_3 <- motif_results_2 %>%
@@ -392,7 +417,8 @@ test_that("each row is less than the next row", {
 motif_results_12 <- motif_results_11 %>%
   dplyr::mutate(., overlap = NA)
 
-# run the remove_repeated function
+# run the remove_repeated function to remove overlapping (0.95%) motifs
+
 # when overlappying, the longer motif is kept (e.g. choice between keeping
 # 1_motif and 3_motif, but 3_motif duration > 1, 3_motif is kept)
 # so then you will have 1_match and no 1_motif but this doesn't matter
@@ -404,74 +430,136 @@ motif_results_12 <- motif_results_11 %>%
 # the start and end minutes is based on the entire time series for that month,
 # so that's why you can work with one motif df per month and still know where
 # things came from
-motif_results_13 <- MIMiCS::remove_repeated(motif_results_12)
 
+# Step 4 run the remove_repeated function on the data frames
+# can see here how the two functions differ
+motif_results_13 <- MIMiCS::remove_repeated(motif_results_12)
 motif_results_13 <- remove_repeated_master(motif_results_12)
 
-# call the function recursively make sure all overlaps are removed
-# only fully overlapping things or fully contained overlaps are removed
-# Start End compare 134 to 168, and next row 135 to 169, these overlap but
-# weren't removed because not full contained, but should probably be removed
-# could check for 95% overlap and remove
 
-# create a df with columns start and end
-new_df <- data.frame(
-  Distance = c(3.5, 2.5, 4.9, 2.7, 3.7, 2.9, 3.22),
-  Start = c(6, 6, 20, 40, 134, 135, 200),
-  End = c(40, 42, 100, 150, 168, 169, 300)
-)
-# do the rows overlap?
-testing <- iteration1(new_df)
-# can see here that the overlap isn't detected for rows 5 and 6
-
-calculate_overlap_percentage <- function(df, x_col, y_col) {
-  n <- nrow(df)
-  print(n)
-  df$overlap_percentage <- rep(NA, n)
-  print(df$overlap_percentage)
-  print("starting first loop")
-  for (i in 1:n) {
-    print(paste("this is i", i))
-    x1 <- df[i, x_col]
-    print(paste("this is x1", x1))
-    y1 <- df[i, y_col]
-    print(paste("this is y1", y1))
-    for (j in 1:n) {
-      print(paste("this is j", j))
-      x2 <- df[j, x_col]
-      print(x2)
-      y2 <- df[j, y_col]
-      print(y2)
-      overlap <- min(y1, y2) - max(x1, x2)
-      print(overlap)
-      total_length <- max(y1 - x1, y2 - x2)
-      print(total_length)
-      overlap_percentage <- overlap / total_length
-      df$overlap_percentage[i] <- overlap_percentage
-    }
-  }
-  return(df)
-}
-# ignore the last row which will always have overlap_percentage of 1
-
-# overlap percentage should be 0 when there is no overlap
-# overlap percentage should be 1 when there is full overlap
-# overlap percentage should be 0.5 when there is half overlap
-
-calculate_overlap_percentage(new_df, "Start", "End")
-
-# check the recursion with a sample dataset that has overlaps that appear after
-# each iteration
-# so lots of 6,6,6,6,6 matching 40,41,42,43,45
-# after 3 runs, there are still overlaps (there should be)
-# but with a recursive call, the final row should be 6, 45, which is the longest
-# overlap
-# Step 3 wrangle the hime data
-# Step 3.1 rename the columns
-# Step 3.2 pivot and mutate
-# Step 4 run the remove_repeated function on the data frames
 # Step 5 loop through each row in the dfs_motif list
-# Step 6 write the files to the output folder
+# Remember the dfs_motif list is a list of data frames with the acoustic index
+# value for each result minute. We need to match these values to the motifs
+# For testing, the motif result Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B is
+# being used, and the df is Booroopki-Dry-B_Dec_AC
+
+# get the data frame from the list
+names(dfs_motif)
+dfs_motif_sub <- dfs_motif[[10]]
+# this will be called motif_results
+motif_results <- motif_results_13
+
+# TODO: so this is case senesitive, and i'm using length in motif_results, which
+# I think is created in the remove_repeated_master
+# Instead of the Length column (original script). In this specific case I'm
+# testing, the Length column shows 34, but the length column shows 36.
+
+# TODO: This loop will overwrite overlapping motifs. If motif 1 goes from result
+# minute 1 to 30, and motif 2 goes from minute 11 to 40, then motif 1 will only
+# be annotated for the first 10 minutes. This could be an issue because when
+# spectrograms are cropped, the motif will appear shorter than it should be.
+# Although usually it won't be an issue and a classification can still be made. 
+# But it would be nice to special case this and allow overlapping motifs and
+# cropping in the future. 
+for (row in seq_len(nrow(dfs_motif_sub))) {
+skip_to_next <- FALSE
+    tryCatch(
+      {
+        dfs_motif_sub[motif_results$Start[row]:motif_results$End[row],
+        c("motif", "distance", "length")] <- motif_results[row, c("instance", "Distance", "length")]
+      },
+      error = function(e) {
+        skip_to_next <<- TRUE
+        }
+    )
+    if (skip_to_next) {
+      next
+    }
+}
+names(dfs_motif_sub)
+
+# adding a count and filtering
+# filter for n >= 30. originally this was because the remove function wasn't
+# recursive and there were lots of little motifs like 5 minutes, so this was
+# annoying for spectrograms.
+# motifs that are 20 or 30 minutes or more are easier to look at and categorise
+# But with the new function this is less of an issue.
+# for now, going to filter at 20. And come back to this depending on adjustments
+# to the recursive overlap threshold. Because this is almost a redundancy step
+# to make sure there are no small or overlapping motifs that will later be
+# generated into spectrograms to categorise.
+# TODO: but may want to add a way to have overlapping motifs at a certain
+# threshold, so multiple columns, so that the spectrograms can be cropped for
+# each of them, and a motif that is actually 34 long but appears as 19 long
+# because of overlapping isn't discarded.
+
+# create a new column (n) with the number of non-NA values in the motif column
+# per group (motif). NA values are ignored in the sum
+# then filter for n >= 20, but keep NA values (needed for time series plotting,
+# I think...)
+# TODO: if nas are needed for the time series plots, then wouldn't filtering out
+# N values below 20 also create gaps in the plots?
+dfs_motif_sub_2 <- dplyr::group_by(dfs_motif_sub, motif) %>%
+  dplyr::mutate(n = ifelse(is.na(motif),
+    NA,
+    sum(!is.na(motif),
+      na.rm = TRUE
+    )
+  )) %>%
+  dplyr::filter(is.na(n) | n >= 20)
+
+# Step 6 write the files to the output folder (himepath = hime-clean at the
+# moment)
+# writing dfs_motif_sub_2 to a csv file
+# need current site ID, month ID, and index
+dfs_motif_sub_2 %>% dplyr::glimpse()
+unique(dfs_motif_sub_2$month)
+dfs_motif_sub_2$FileName[1]
+himepath
+get_data_path(himepath)
+
+create_file_name_motif_csv <- function(df) {
+  df <- dfs_motif_sub_2
+  month_id <- unique(df$month)
+  site_id <- unique(df$site)
+  index_id <- names(df)[1]
+  file_id <- paste0("Motif_",
+                    index_id, "_",
+                    month_id, "_",
+                    site_id,
+                    ".csv")
+  return(file_id)
+}
+
+write.csv(
+  x = dfs_motif_sub_2,
+  file = file.path(
+    get_data_path(himepath),
+    create_file_name_motif_csv(dfs_motif_sub_2)
+  ),
+  row.names = F
+)
+
+# TODO: i can easily lapply the entire above thing
+# TODO: at this point, ID = 0, should it be matched to the motif ID when the
+# data frames are merged?
+
 # Step 7 two different plot dataframes
+# TODO: at this stage, there already exist plots _indicespertime which show ALL
+# three acoustic indices. These should be in a different folder I think. And the
+# below plots which are index specific should be in another folder
+
+# Step 7.1 create main plot data frame
+
+# Step 7.2 create the plot data frame for the geom_lines
+plot_motif <-
+  dplyr::select(complete_inter, motif, position, Index) %>%
+  dplyr::rename(., reference = motif) %>%
+  dplyr::filter(reference != "NA") %>%
+  tidyr::separate(.,
+          reference,
+          into = c("number", "what"),
+          remove = F
+  )
 
 # How do the motifs get matched back to the file id??
