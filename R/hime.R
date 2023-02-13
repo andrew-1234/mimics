@@ -10,74 +10,74 @@
 #' @examples
 #' run_hime(run_hime(timeseriesdata, himeoutput, himepath = "~/HIME/bin/HIME_release.jar"))
 run_hime <- function(timeseriesdata, himeoutput, himepath = file.path(getwd(), "HIME-master/bin/HIME_release.jar")) {
-        # look for HIME_release.jar in himepath
-        if (!file.exists(himepath)) {
-                stop("HIME_release.jar not found. Please check your himepath.")
-        } else {
-                cat("HIME_release.jar found. Proceeding with HIME analysis.\n")
-        }
+  # look for HIME_release.jar in himepath
+  if (!file.exists(himepath)) {
+    stop("HIME_release.jar not found. Please check your himepath.")
+  } else {
+    cat("HIME_release.jar found. Proceeding with HIME analysis.\n")
+  }
 
-        # get the full path to the output directory
-        timeseries_output <- get_data_path(himeoutput)
+  # get the full path to the output directory
+  timeseries_output <- get_data_path(himeoutput)
 
-        # create the output directory if it doesn't exist
-        if (!dir.exists(timeseries_output)) {
-                dir.create(timeseries_output)
-        }
+  # create the output directory if it doesn't exist
+  if (!dir.exists(timeseries_output)) {
+    dir.create(timeseries_output)
+  }
 
-        # get the list of timeseries .txt files
-        ts_files <- list.files(timeseriesdata, pattern = "*.txt", full.names = TRUE)
+  # get the list of timeseries .txt files
+  ts_files <- list.files(timeseriesdata, pattern = "*.txt", full.names = TRUE)
 
-        # for each file, run hime using full path
-        # TODO this is the mac version, only tested with zsh. need a pwsh version.
-        for (file in ts_files) {
-                string_input_file <-
-                        shQuote(get_data_path(file), type = "sh")
+  # for each file, run hime using full path
+  # TODO this is the mac version, only tested with zsh. need a pwsh version.
+  for (file in ts_files) {
+    string_input_file <-
+      shQuote(get_data_path(file), type = "sh")
 
-                string_output_file <-
-                        shQuote(file.path(get_data_path(himeoutput), paste("Res_", basename(file), sep = "")),
-                                type = "sh"
-                        )
+    string_output_file <-
+      shQuote(file.path(get_data_path(himeoutput), paste("Res_", basename(file), sep = "")),
+        type = "sh"
+      )
 
-                # prepare shell commands, using shQuote to escape special characters
-                # set where the tmp.log file will be located in the working directory
-                templogfile_create <- paste("4 32 >", shQuote(file.path(getwd(), "tmp.log")))
+    # prepare shell commands, using shQuote to escape special characters
+    # set where the tmp.log file will be located in the working directory
+    templogfile_create <- paste("4 32 >", shQuote(file.path(getwd(), "tmp.log")))
 
-                # TODO: what does 4 32 do?
-                run_hime_on_input <-
-                        paste("-jar", himepath, string_input_file, templogfile_create)
+    # TODO: what does 4 32 do?
+    run_hime_on_input <-
+      paste("-jar", himepath, string_input_file, templogfile_create)
 
-                # set where the tmp.log file will be located again
-                templogfile_pipe <- shQuote(file.path(getwd(), "tmp.log >"))
+    # set where the tmp.log file will be located again
+    templogfile_pipe <- shQuote(file.path(getwd(), "tmp.log >"))
 
-                # uses grep to output each string starting with " Motif" and pipe to a new .txt file
-                grep_to_output_file <-
-                        paste(
-                                " Motif", "tmp.log >",
-                                string_output_file
-                        )
+    # uses grep to output each string starting with " Motif" and pipe to a new .txt file
+    grep_to_output_file <-
+      paste(
+        " Motif", "tmp.log >",
+        string_output_file
+      )
 
-                # finally, execute the commands
-                system2("java", run_hime_on_input) # run the hime command
-                system2("grep", grep_to_output_file) # pipe the results into an output file with a real name
-        }
+    # finally, execute the commands
+    system2("java", run_hime_on_input) # run the hime command
+    system2("grep", grep_to_output_file) # pipe the results into an output file with a real name
+  }
 
-        # remove the left over tmp.log file in the working directory
-        unlink(file.path(getwd(), "tmp.log"))
+  # remove the left over tmp.log file in the working directory
+  unlink(file.path(getwd(), "tmp.log"))
 
-        # run the hime_processing function which cleans up the file a little bit
-        # could probably integrate this step better so that cleanup happens on the original hime files
-        hime_processing(himeoutput)
+  # run the hime_processing function which cleans up the file a little bit
+  # could probably integrate this step better so that cleanup happens on the original hime files
+  hime_processing(himeoutput)
 
-        # did the hime analysis work and produce output files?
-        hime_clean_files <- length(
-                list.files(himeoutput, pattern = "*.txt")
-        )
-        if (hime_clean_files == 0) {
-                stop("No HIME output files found. Check your function arguements.")
-        } else {
-                sprintf("HIME analysis complete, %d output files found.", hime_clean_files)
-        }
+  # did the hime analysis work and produce output files?
+  hime_clean_files <- length(
+    list.files(himeoutput, pattern = "*.txt")
+  )
+  if (hime_clean_files == 0) {
+    stop("No HIME output files found. Check your function arguements.")
+  } else {
+    sprintf("HIME analysis complete, %d output files found.", hime_clean_files)
+  }
 }
 
 # if windows hime path settings

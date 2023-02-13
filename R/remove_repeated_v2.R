@@ -29,7 +29,7 @@ function_remove_loop <- function(practice) {
         overlap_length_next <- range_both / (practice$length[row + 1])
 
         # if either overlap is equal to or greater than 0.95
-        if (overlap_length >= 0.95 | overlap_length_next >= 0.95) {
+        if (overlap_length >= 0.95 || overlap_length_next >= 0.95) {
           message("yes, significant overlap")
 
           # check if length is equal
@@ -46,6 +46,9 @@ function_remove_loop <- function(practice) {
             practice$action[row] <- "remove"
             practice$action[row + 1] <- "keep"
           }
+        } else {
+          message("no, not significant overlap")
+          practice$overlap[row] <- overlap_length
         }
       }
     }
@@ -104,7 +107,11 @@ function_remove_v1 <- function(practice) {
 
 remove_repeated_master <- function(input_df) {
   # recursion_counter <<- recursion_counter + 1
-
+  # check for NULL input
+  if (is.null(input_df)) {
+    warning("The input data frame is NULL.")
+    return(NULL)
+  }
   # run remove repeated prep if action column doesn't exist
   if (!"action" %in% colnames(input_df)) {
     input_df <- remove_repeated_prep(input_df)
@@ -113,7 +120,8 @@ remove_repeated_master <- function(input_df) {
   # the expr_label should return the name of the df which had no data
   if (nrow(input_df) == 0) {
     msg <- paste0("The input ", rlang::expr_label(substitute(input_df)), "contains no data.")
-    stop(msg)
+    warning(msg)
+    return(NULL)
   }
 
   # check if only 1 row, and if so, return unmodified data frame
@@ -128,8 +136,13 @@ remove_repeated_master <- function(input_df) {
     return(input_df)
   } else {
     # first run condition
-    if (all(is.na(input_df$action))) {
+    # this is based on assumption that the returned df, action should NOT all be
+    # NA
+    # If first run is true, run this.
+    # else, add all na in action to the base case.
+    if (first_run) {
       message("first run:")
+      first_run <<- FALSE
       output_df <- suppressMessages(
         function_remove_v1(input_df)
       )
@@ -137,7 +150,8 @@ remove_repeated_master <- function(input_df) {
     } else {
       # not first run, so check the base case
       # if practice$action contains "remove"
-      if (!any(input_df$action %in% "remove")) {
+      # or there was no significant overlaps found.
+      if (!any(input_df$action %in% "remove") || all(is.na(input_df$action))) {
         print("base case, no more removal needed")
         # print(paste("The function has recursed", recursion_counter, "times."))
         # return the data frame

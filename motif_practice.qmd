@@ -333,6 +333,7 @@ types please check this is what you want to do. Or, add an option that if
 duplicate names detected, add suffix to file name.
 
 ```{r}
+
 run_hime(
   timeseriesdata = "output/timeseries-mini",
   himeoutput = "output/hime"

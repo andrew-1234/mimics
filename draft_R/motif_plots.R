@@ -305,3 +305,8 @@ hime_indices <- function(total_indices, complete_ts, himedatapath, X.sites, X.mo
                 ggplot2::ggsave(file.path(figures, paste(X.sites, X.month_id, index, "indicespertime.jpg", sep = "_")))
         }
 }
+
+for (i in seq_along(split_data_ts_pivot)) {
+  plot <- plot_ts(split_data_ts_pivot[[i]], ele_names[i])
+  ggplot2::ggsave(file.path(pathid, ele_names[i]))
+}

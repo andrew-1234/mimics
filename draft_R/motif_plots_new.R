@@ -326,7 +326,7 @@ add_id_column <- function(df) {
 
   # test that distance column is <= 5
   test_that("distance column is <= 5", {
-    expect_true(all(motif_results_4$Distance <= 5))
+    expect_true(all(df_3$Distance <= 5))
   })
   return(df_3)
 }
@@ -338,156 +338,150 @@ motif_results_3 <- lapply(motif_results_2, add_id_column)
 # continue with function unless row count is 0
 # add a skip function or something here, or a check that the row count is > 0 if
 # else condition
-
-tryCatch(
-  test_that("motif_results still contains rows", {
-    expect_true(nrow(motif_results_3) > 0)
-  }),
-  error = function(e) {
-    message("🚨 motif_results is empty after filtering for distance <= 5")
+empty <- lapply(motif_results_3, function(x) {
+  if (nrow(x) == 0) {
+    cat("🚨 motif_results is empty after filtering for distance <= 5\n")
+  } else {
+    cat("👏 is not empty after filtering for distance <= 5\n")
   }
-)
-###
-# Step 2.2 for each data frame in list, read the hime file
-
-# For testing purposes
-full_path <- "/Users/andrew/Documents/GitHub/mimics/output/hime-clean/Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B.txt"
-
-motif_results <- utils::read.table(full_path, row.names = NULL)
-
-# Rename the columns
-motif_results_2 <- motif_results %>%
-  dplyr::rename(
-    .,
-    FirstInstance_Start = V1,
-    FirstInstance_End = V2,
-    SecondInstance_Start = V3,
-    SecondInstance_End = V4,
-    Length = V5,
-    Distance = V6
-  )
-# check that motif_results_2 contains rows
-test_that("motif_results_2 contains rows", {
-  expect_true(nrow(motif_results_2) > 0)
 })
 
-# check that motif_results_2 contsins 6 columns with the correct names
-test_that("motif_results_2 contains the right number of columns and correct names", {
-  expect_equal(ncol(motif_results_2), 6)
-  expect_equal(names(motif_results_2), c("FirstInstance_Start", "FirstInstance_End", "SecondInstance_Start", "SecondInstance_End", "Length", "Distance"))
+
+# check that each dataframe in the list contsins 6 columns with the correct
+# names
+test_that("each dataframe in the list contsins 6 columns with the correct names", {
+  lapply(motif_results_3, function(x) {
+    expect_equal(ncol(x), 7)
+    expect_equal(names(x), c(
+      "FirstInstance_Start",
+      "FirstInstance_End",
+      "SecondInstance_Start",
+      "SecondInstance_End",
+      "Length",
+      "Distance",
+      "id"
+    ))
+  })
 })
 
 # Step 3 wrangle the hime data
 # Step 3.1 rename the columns
 # Step 3.2 pivot and mutate
 
-# add an id column to the motif_results_2 data frame with a sequential count
-motif_results_3 <- motif_results_2 %>%
-  dplyr::mutate(., id = 1:as.numeric(dplyr::count(.)))
+motif_pivot_longer <- function(motif_list) {
+  lapply(motif_list, function(x) {
+    x %>%
+      tidyr::pivot_longer(.,
+        cols = 1:4,
+        names_to = "Instance",
+        values_to = "position"
+      )
+  })
+}
+motif_results_4 <- motif_pivot_longer(motif_results_3)
 
-# check for distance <= 5 keep only those
-# TODO: explain why this is done
-motif_results_4 <- motif_results_3 %>%
-  dplyr::filter(., Distance <= 5)
+# Test that each dataframe in the list contains five columns
+test_that("each dataframe in the list contains five columns", {
+  lapply(motif_results_4, function(x) {
+    expect_equal(ncol(x), 5)
+  })
+})
+rename_motif_match <- function(motif_list) {
+  lapply(motif_list, function(x) {
+    x %>%
+      dplyr::mutate(.,
+        Instance = gsub(
+          pattern = "FirstInstance",
+          replacement = "motif",
+          x = Instance
+        )
+      ) %>%
+      dplyr::mutate(.,
+        Instance = gsub(
+          pattern = "SecondInstance",
+          replacement = "match",
+          x = Instance
+        )
+      )
+  })
+}
 
-# test that distance column is <= 5
-test_that("distance column is <= 5", {
-  expect_true(all(motif_results_4$Distance <= 5))
+motif_results_5 <- rename_motif_match(motif_results_4)
+
+# test that each dataframe in the list contains the right number of columns
+# and the the instance column contains four unique values
+test_that("each dataframe in the list contains the right number of columns and the the instance column contains four unique values", {
+  lapply(motif_results_5, function(x) {
+    if (nrow(x) > 0) {
+      expect_equal(ncol(x), 5)
+      expect_equal(length(unique(x$Instance)), 4)
+    }
+  })
 })
 
-# test that motif_results_4 still contains rows
-# try catch to avoid error if motif_results_4 is empty
-tryCatch(
-  test_that("motif_results_4 still contains rows", {
-    expect_true(nrow(motif_results_4) > 0)
-  }),
-  error = function(e) {
-    message("🚨 motif_results_4 is empty after filtering for distance <= 5")
-  }
-)
-
-# pivot longer (from wide to long)
-motif_results_5 <- motif_results_4 %>%
-  tidyr::pivot_longer(.,
-    cols = 1:4,
-    names_to = "Instance",
-    values_to = "position"
-  )
-
-# test that motif_results_5 contains five columns
-test_that("motif_results_5 contains the right number of columns", {
-  expect_equal(ncol(motif_results_5), 5)
+# test that in the list, the instance column in each data frame does not contain
+# the text "Instance"
+test_that("in the list, the instance column in each data frame does not contain the text Instance", {
+  lapply(motif_results_5, function(x) {
+    expect_false("Instance" %in% x$Instance)
+  })
 })
 
-# the terminology motif and match is what Nina uses
-# this changes the pattern "FirstInstance" in the Instance column to "motif"
-motif_results_6 <- motif_results_5 %>%
-  dplyr::mutate(.,
-    Instance = gsub(
-      pattern = "FirstInstance",
-      replacement = "motif",
-      x = Instance
-    )
-  )
-# this changes the pattern "SecondInstance" in the Instance column to "match"
-motif_results_7 <- motif_results_6 %>%
-  dplyr::mutate(.,
-    Instance = gsub(
-      pattern = "SecondInstance",
-      replacement = "match",
-      x = Instance
-    )
-  )
+separate_instance_column <- function(motif_list) {
+  lapply(motif_list, function(x) {
+    x %>%
+      tidyr::separate(.,
+        Instance,
+        into = c("instance", "moment"),
+        sep = "_"
+      )
+  })
+}
 
-# test that motif_results_7 contains 4 unique values in the Instance column
-test_that("motif_results_7 contains the right number of unique values in the Instance column", {
-  expect_equal(length(unique(motif_results_7$Instance)), 4)
+motif_results_6 <- separate_instance_column(motif_results_5)
+
+
+# test that the instance and moment columns of each dataframe in the list
+# contains the right number of unique values
+test_that("the instance and moment columns of each dataframe in the list contains the right number of unique values", {
+  lapply(motif_results_6, function(x) {
+    if (nrow(x) > 0) {
+      expect_equal(length(unique(x$instance)), 2)
+      expect_equal(length(unique(x$moment)), 2)
+    }
+  })
 })
 
-# test that motif_results_7 Instance column does not contain text Instance
-# to verify that the gsub worked
-test_that("motif_results_7 Instance column does not contain text Instance", {
-  expect_false("Instance" %in% motif_results_7$Instance)
-})
+# pivot wider again
+motif_pivot_wider <- function(motif_list) {
+  lapply(motif_list, function(x) {
+    x %>%
+      tidyr::pivot_wider(.,
+        names_from = moment,
+        values_from = position
+      )
+  })
+}
+motif_results_7 <- motif_pivot_wider(motif_results_6)
 
-# now separate the Instance column into instance and moment based on _
-motif_results_8 <- motif_results_7 %>%
-  tidyr::separate(.,
-    Instance,
-    into = c("instance", "moment"),
-    sep = "_"
-  )
+# function to add an id to the instance columnm, sort by `Start`, and add a new
+# column for overlap = NA
+add_instance_id <- function(motif_list) {
+  lapply(motif_list, function(x) {
+    x %>%
+      dplyr::mutate(.,
+        instance = paste(id, instance, sep = "_")
+      )
+    if (nrow(x) > 0) {
+      x %>%
+        dplyr::arrange(., Start, End) %>%
+        dplyr::mutate(., overlap = NA)
+    }
+  })
+}
 
-# test that the ncol of notif_results_8 is + 1 compared to motif_results_7
-test_that("motif_results_8 contains the right number of columns", {
-  expect_equal(ncol(motif_results_8), ncol(motif_results_7) + 1)
-})
+motif_results_8 <- add_instance_id(motif_results_7)
 
-# test that the instance and moment columns both contain only 2 unique values
-test_that("motif_results_8 instance and moment columns contain the right number of unique values", {
-  expect_equal(length(unique(motif_results_8$instance)), 2)
-  expect_equal(length(unique(motif_results_8$moment)), 2)
-})
-
-# pivot wider again, taking the names start and end from moment and the values
-# from position
-motif_results_9 <- motif_results_8 %>%
-  tidyr::pivot_wider(.,
-    names_from = moment,
-    values_from = position
-  )
-
-test_that("motif_results_9 has less rows than motif_results_8", {
-  expect_true(nrow(motif_results_9) < nrow(motif_results_8))
-})
-
-# modify the instance column to include the id
-motif_results_10 <- motif_results_9 %>%
-  dplyr::mutate(., instance = paste(id, instance, sep = "_"))
-
-# arrange the data frame by the Start column
-motif_results_11 <- motif_results_10 %>%
-  dplyr::arrange(., Start)
 
 # test that the data was sorted correctly by the Start column
 # make sure that each row is less than the next row
@@ -495,13 +489,10 @@ motif_results_11 <- motif_results_10 %>%
 # is this a problem having two equal rows?
 # using is.unsorted instead passes the test if rows are identical
 test_that("each row is less than the next row", {
-  expect_false(is.unsorted(motif_results_11$Start))
+  lapply(motif_results_8, function(x) {
+    expect_false(is.unsorted(x$Start))
+  })
 })
-
-# add an overlap column = NA
-# this dataset saved for testing in testdata as Remove_repeated_df1
-motif_results_12 <- motif_results_11 %>%
-  dplyr::mutate(., overlap = NA)
 
 # run the remove_repeated function to remove overlapping (0.95%) motifs
 
@@ -519,10 +510,37 @@ motif_results_12 <- motif_results_11 %>%
 
 # Step 4 run the remove_repeated function on the data frames
 # can see here how the two functions differ
-motif_results_13 <- MIMiCS::remove_repeated(motif_results_12)
+motif_results_13 <- remove_repeated(motif_results_12)
 motif_results_13 <- remove_repeated_master(motif_results_12)
 
+motif_results_9 <- lapply(motif_results_8, function(x) {
+  if (!is.null(x) && nrow(x) > 0) {
+    remove_repeated(x)
+  }
+})
 
+motif_results_9_a <- lapply(motif_results_8, function(x) {
+  remove_repeated_master(x)
+})
+
+new_list <- list()
+for (item in motif_results_8) {
+  if (!is.null(item) && nrow(item) > 0) {
+    new_list[[length(new_list) + 1]] <- remove_repeated_master(item)
+  }
+}
+# WORKING
+first_run <- TRUE
+remove_repeated_master(motif_results_8[[1]])
+
+test <- remove_repeated_prep(motif_results_8[[1]])
+
+test <- function_remove_loop(test)
+# discovered a new test case, first run, and no overlap discovered. But I think
+# 95% is too strict: try 90%. But first handle this edge case.
+# 1     34     2.59     4 motif       15    49   0.941     34 NA
+# 2     34     2.63     6 motif       17    51   0.824     34 NA
+motif_results_8[[1]]
 # Step 5 loop through each row in the dfs_motif list
 # Remember the dfs_motif list is a list of data frames with the acoustic index
 # value for each result minute. We need to match these values to the motifs
@@ -539,28 +557,33 @@ motif_results <- motif_results_13
 # I think is created in the remove_repeated_master
 # Instead of the Length column (original script). In this specific case I'm
 # testing, the Length column shows 34, but the length column shows 36.
+# Look at the original motif_results as it is read in, v5 column shows 34, but
+# length of v1 to v2 is 36, and length of v3 to v4 is 34, so probably v5 column
+# length is based on the length of the match?
 
 # TODO: This loop will overwrite overlapping motifs. If motif 1 goes from result
 # minute 1 to 30, and motif 2 goes from minute 11 to 40, then motif 1 will only
 # be annotated for the first 10 minutes. This could be an issue because when
 # spectrograms are cropped, the motif will appear shorter than it should be.
-# Although usually it won't be an issue and a classification can still be made. 
+# Although usually it won't be an issue and a classification can still be made.
 # But it would be nice to special case this and allow overlapping motifs and
-# cropping in the future. 
+# cropping in the future.
 for (row in seq_len(nrow(dfs_motif_sub))) {
-skip_to_next <- FALSE
-    tryCatch(
-      {
-        dfs_motif_sub[motif_results$Start[row]:motif_results$End[row],
-        c("motif", "distance", "length")] <- motif_results[row, c("instance", "Distance", "length")]
-      },
-      error = function(e) {
-        skip_to_next <<- TRUE
-        }
-    )
-    if (skip_to_next) {
-      next
+  skip_to_next <- FALSE
+  tryCatch(
+    {
+      dfs_motif_sub[
+        motif_results$Start[row]:motif_results$End[row],
+        c("motif", "distance", "length")
+      ] <- motif_results[row, c("instance", "Distance", "length")]
+    },
+    error = function(e) {
+      skip_to_next <<- TRUE
     }
+  )
+  if (skip_to_next) {
+    next
+  }
 }
 names(dfs_motif_sub)
 
@@ -585,14 +608,29 @@ names(dfs_motif_sub)
 # I think...)
 # TODO: if nas are needed for the time series plots, then wouldn't filtering out
 # N values below 20 also create gaps in the plots?
+# should instead turn n less than 20 into NA???
 dfs_motif_sub_2 <- dplyr::group_by(dfs_motif_sub, motif) %>%
   dplyr::mutate(n = ifelse(is.na(motif),
     NA,
     sum(!is.na(motif),
       na.rm = TRUE
     )
-  )) %>%
-  dplyr::filter(is.na(n) | n >= 20)
+  ))
+dfs_motif_sub_2 <- dfs_motif_sub_2 %>%
+  dplyr::mutate(n = ifelse(n < 20,
+    NA,
+    n
+  ))
+# Old method for filtering. Rows with n less than 20 were dropped resulting in a
+# potential gap in the time series plot?
+# %>%
+# dplyr::filter(is.na(n) | n >= 20)
+
+# nrow(dfs_motif_sub_2)
+# nrow(dfs_motif_sub)
+# nrow(dfs_motif_sub_2)
+
+# Now, nrow sub_2 should be equal to nrow sub, instead of having less rows.
 
 # Step 6 write the files to the output folder (himepath = hime-clean at the
 # moment)
@@ -609,11 +647,13 @@ create_file_name_motif_csv <- function(df) {
   month_id <- unique(df$month)
   site_id <- unique(df$site)
   index_id <- names(df)[1]
-  file_id <- paste0("Motif_",
-                    index_id, "_",
-                    month_id, "_",
-                    site_id,
-                    ".csv")
+  file_id <- paste0(
+    "Motif_",
+    index_id, "_",
+    month_id, "_",
+    site_id,
+    ".csv"
+  )
   return(file_id)
 }
 
@@ -658,7 +698,7 @@ plot_ts <- dfs_motif_sub_3 %>%
 
 # Step 7.2 create the plot data frame for the geom_lines
 plot_motif <- dfs_motif_sub_3 %>%
-dplyr::ungroup() %>%
+  dplyr::ungroup() %>%
   dplyr::select(motif, position, Index) %>%
   dplyr::rename(., reference = motif) %>%
   dplyr::filter(reference != "NA") %>%
@@ -700,7 +740,7 @@ ggplot2::ggplot(plot_ts, ggplot2::aes(x = position, y = Index)) +
     legend.position = "none"
   )
 
-  pathid
+pathid
 
 # The order of naming is different here to previously?
 create_file_name_index_plot <- function(df) {
