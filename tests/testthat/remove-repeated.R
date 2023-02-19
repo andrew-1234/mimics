@@ -112,6 +112,7 @@ test_that("function remove_repeated_master works with 1 row df", {
 })
 
 # test that remove_repeated_master works with a 0 length df
+first_run <- TRUE
 empty_df <- remove_repeated_df1[0, ]
 test_that("function remove_repeated_master works with 0 row df", {
   expect_error(remove_repeated_master(empty_df), "contains no data.")

@@ -163,6 +163,8 @@ dfs_so_far <- names(split_data_ts)
 
 # Prepare an empty list to store the dataframes
 dfs_motif <- list()
+# dfs_motif <- vector("list", length(dfs_so_far)*3)
+# names(dfs_motif) <- dfs_so_far
 
 # For each dataframe, create three separate dataframes, one for each index
 # And add the motif columns ready for later merging
@@ -194,6 +196,7 @@ for (i in dfs_so_far) {
 
   names(this_list) <- c(newname1, newname2, newname3)
 
+  #dfs_motif[[i]] <- this_list
   dfs_motif <- c(dfs_motif, this_list)
 }
 
@@ -281,7 +284,7 @@ test_that("length of dfs_motif matchs length of motif_results", {
 # for each dataframe, rename the columns
 motif_results_2 <- list()
 motif_results_2 <- lapply(motif_results, function(x) {
-  x %>%
+  x <- x %>%
     dplyr::rename(
       .,
       FirstInstance_Start = V1,
@@ -370,7 +373,7 @@ test_that("each dataframe in the list contsins 6 columns with the correct names"
 
 motif_pivot_longer <- function(motif_list) {
   lapply(motif_list, function(x) {
-    x %>%
+    x <- x %>%
       tidyr::pivot_longer(.,
         cols = 1:4,
         names_to = "Instance",
@@ -388,7 +391,7 @@ test_that("each dataframe in the list contains five columns", {
 })
 rename_motif_match <- function(motif_list) {
   lapply(motif_list, function(x) {
-    x %>%
+    x <- x %>%
       dplyr::mutate(.,
         Instance = gsub(
           pattern = "FirstInstance",
@@ -429,7 +432,7 @@ test_that("in the list, the instance column in each data frame does not contain 
 
 separate_instance_column <- function(motif_list) {
   lapply(motif_list, function(x) {
-    x %>%
+    x <- x %>%
       tidyr::separate(.,
         Instance,
         into = c("instance", "moment"),
@@ -455,7 +458,7 @@ test_that("the instance and moment columns of each dataframe in the list contain
 # pivot wider again
 motif_pivot_wider <- function(motif_list) {
   lapply(motif_list, function(x) {
-    x %>%
+    x <- x %>%
       tidyr::pivot_wider(.,
         names_from = moment,
         values_from = position
@@ -468,12 +471,12 @@ motif_results_7 <- motif_pivot_wider(motif_results_6)
 # column for overlap = NA
 add_instance_id <- function(motif_list) {
   lapply(motif_list, function(x) {
-    x %>%
+    x <- x %>%
       dplyr::mutate(.,
         instance = paste(id, instance, sep = "_")
       )
     if (nrow(x) > 0) {
-      x %>%
+      x <- x %>%
         dplyr::arrange(., Start, End) %>%
         dplyr::mutate(., overlap = NA)
     }
@@ -510,48 +513,26 @@ test_that("each row is less than the next row", {
 
 # Step 4 run the remove_repeated function on the data frames
 # can see here how the two functions differ
-motif_results_13 <- remove_repeated(motif_results_12)
-motif_results_13 <- remove_repeated_master(motif_results_12)
 
-motif_results_9 <- lapply(motif_results_8, function(x) {
-  if (!is.null(x) && nrow(x) > 0) {
-    remove_repeated(x)
+remove_repeated_wrapped <- function (motif_results, threshold = 0.95) {
+  new_list <- list()
+  
+  for (i in seq_along(motif_results)) {
+    item <- motif_results[[i]]
+    if (!is.null(item) && nrow(item) > 0) {
+      first_run <<- TRUE
+      new_list[[i]]  <- remove_repeated_master(item, threshold)
+      names(new_list)[i] <- names(motif_results)[i]
+      
+    }
   }
-})
 
-motif_results_9_a <- lapply(motif_results_8, function(x) {
-  remove_repeated_master(x)
-})
-
-new_list <- list()
-for (item in motif_results_8) {
-  if (!is.null(item) && nrow(item) > 0) {
-    new_list[[length(new_list) + 1]] <- remove_repeated_master(item)
-  }
+  filtered_list <- Filter(Negate(is.null), new_list)
+  return(filtered_list)
 }
-# WORKING
-first_run <- TRUE
-remove_repeated_master(motif_results_8[[1]])
 
-test <- remove_repeated_prep(motif_results_8[[1]])
+motif_results_9 <- remove_repeated_wrapped(motif_results_8, threshold = 0.9)
 
-test <- function_remove_loop(test)
-# discovered a new test case, first run, and no overlap discovered. But I think
-# 95% is too strict: try 90%. But first handle this edge case.
-# 1     34     2.59     4 motif       15    49   0.941     34 NA
-# 2     34     2.63     6 motif       17    51   0.824     34 NA
-motif_results_8[[1]]
-# Step 5 loop through each row in the dfs_motif list
-# Remember the dfs_motif list is a list of data frames with the acoustic index
-# value for each result minute. We need to match these values to the motifs
-# For testing, the motif result Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B is
-# being used, and the df is Booroopki-Dry-B_Dec_AC
-
-# get the data frame from the list
-names(dfs_motif)
-dfs_motif_sub <- dfs_motif[[10]]
-# this will be called motif_results
-motif_results <- motif_results_13
 
 # TODO: so this is case senesitive, and i'm using length in motif_results, which
 # I think is created in the remove_repeated_master
@@ -568,24 +549,42 @@ motif_results <- motif_results_13
 # Although usually it won't be an issue and a classification can still be made.
 # But it would be nice to special case this and allow overlapping motifs and
 # cropping in the future.
-for (row in seq_len(nrow(dfs_motif_sub))) {
-  skip_to_next <- FALSE
-  tryCatch(
-    {
-      dfs_motif_sub[
-        motif_results$Start[row]:motif_results$End[row],
-        c("motif", "distance", "length")
-      ] <- motif_results[row, c("instance", "Distance", "length")]
-    },
-    error = function(e) {
-      skip_to_next <<- TRUE
+
+motif_match_df <- function(dfs_motif, motif_results) {
+  
+  for (i in seq_along(dfs_motif)) {
+    # get the dataframe
+    item <- dfs_motif[[i]]
+    # get the data frame name
+    name <- names(dfs_motif)[i]
+
+    # get matching motif results (if it exists)
+    motif_results_sub <- motif_results[[name]]
+    if (is.null(motif_results_sub)) {
+      print("no motif results, next!")
+    } else {
+      print("motif results exist! cool!")
+      for (row in seq_len(nrow(motif_results_sub))) {
+        tryCatch(
+          {
+              item[
+                motif_results_sub$Start[row]:motif_results_sub$End[row],
+                c("motif", "distance", "length")
+              ] <- motif_results_sub[row, c("instance", "Distance", "length")]
+
+          }, error = function(e) {
+            print("error")
+            
+          })
+      }
+      dfs_motif[[i]] <- item
     }
-  )
-  if (skip_to_next) {
-    next
   }
+return(dfs_motif)
 }
-names(dfs_motif_sub)
+
+dfs_motif_new <- motif_match_df(dfs_motif, motif_results_9)
+
 
 # adding a count and filtering
 # filter for n >= 30. originally this was because the remove function wasn't
@@ -609,41 +608,45 @@ names(dfs_motif_sub)
 # TODO: if nas are needed for the time series plots, then wouldn't filtering out
 # N values below 20 also create gaps in the plots?
 # should instead turn n less than 20 into NA???
-dfs_motif_sub_2 <- dplyr::group_by(dfs_motif_sub, motif) %>%
-  dplyr::mutate(n = ifelse(is.na(motif),
-    NA,
-    sum(!is.na(motif),
-      na.rm = TRUE
-    )
-  ))
-dfs_motif_sub_2 <- dfs_motif_sub_2 %>%
-  dplyr::mutate(n = ifelse(n < 20,
-    NA,
-    n
-  ))
-# Old method for filtering. Rows with n less than 20 were dropped resulting in a
-# potential gap in the time series plot?
-# %>%
-# dplyr::filter(is.na(n) | n >= 20)
 
-# nrow(dfs_motif_sub_2)
-# nrow(dfs_motif_sub)
-# nrow(dfs_motif_sub_2)
+motif_filtering <- function(dfs_motif_new) {
+  dfs_motif_new_2 <- lapply(dfs_motif_new, function(x) {
 
-# Now, nrow sub_2 should be equal to nrow sub, instead of having less rows.
+    x <- x %>%
+      dplyr::group_by(motif) %>%
+      dplyr::mutate(n = ifelse(is.na(motif),
+        NA,
+        sum(!is.na(motif),
+          na.rm = TRUE
+        )
+      )) %>%
+      dplyr::mutate(n = ifelse(n < 20,
+        NA,
+        n
+      )) # %>%
+      # dplyr::filter(is.na(n) | n >= 20)
+
+  })
+  return(dfs_motif_new_2)
+}
+
+dfs_motif_new_2 <- motif_filtering(dfs_motif_new)
 
 # Step 6 write the files to the output folder (himepath = hime-clean at the
 # moment)
 # writing dfs_motif_sub_2 to a csv file
 # need current site ID, month ID, and index
-dfs_motif_sub_2 %>% dplyr::glimpse()
-unique(dfs_motif_sub_2$month)
-dfs_motif_sub_2$FileName[1]
-himepath
-get_data_path(himepath)
 
-create_file_name_motif_csv <- function(df) {
-  df <- dfs_motif_sub_2
+
+save_final_ts <- function(dfs_motif, himepath) {
+  invisible(
+    lapply(dfs_motif, 
+      create_file_name_motif_csv, 
+      himepath = himepath)
+  )
+}
+
+create_file_name_motif_csv <- function(df, himepath) {
   month_id <- unique(df$month)
   site_id <- unique(df$site)
   index_id <- names(df)[1]
@@ -654,21 +657,19 @@ create_file_name_motif_csv <- function(df) {
     site_id,
     ".csv"
   )
-  return(file_id)
+
+  write.csv(
+    x = df,
+    file = file.path(
+      get_data_path(himepath),
+      file_id
+    ),
+  row.names = F
+  )
 }
 
-write.csv(
-  x = dfs_motif_sub_2,
-  file = file.path(
-    get_data_path(himepath),
-    create_file_name_motif_csv(dfs_motif_sub_2)
-  ),
-  row.names = F
-)
+save_final_ts(dfs_motif_new_2, himepath = himepath)
 
-# TODO: i can easily lapply the entire above thing
-# TODO: at this point, ID = 0, should it be matched to the motif ID when the
-# data frames are merged?
 
 # Step 7 two different plot dataframes
 # TODO: at this stage, there already exist plots _indicespertime which show ALL
@@ -682,69 +683,114 @@ write.csv(
 # I'll save it as a variable, and rename the first column to Index
 # i added ungroup here otherwise it was adding motif column in. not sure if it
 # is needed or not.
-index <- names(dfs_motif_sub_2)[1]
 
-dfs_motif_sub_3 <- dfs_motif_sub_2
-names(dfs_motif_sub_3)[1] <- "Index"
+# this will lapply the function to each dataframe in dfs_motif_new_2
 
-plot_ts <- dfs_motif_sub_3 %>%
-  dplyr::ungroup() %>%
-  dplyr::select(Index, reference, position, date, time) %>%
-  tidyr::separate(.,
-    reference,
-    into = c("number", "what"),
-    remove = FALSE
-  )
+ts_plot_call <- function(dfs_motif, motif_results, pathid) {
+  if (!dir.exists(pathid)) {
+    dir.create(pathid)
+  }
 
-# Step 7.2 create the plot data frame for the geom_lines
-plot_motif <- dfs_motif_sub_3 %>%
-  dplyr::ungroup() %>%
-  dplyr::select(motif, position, Index) %>%
-  dplyr::rename(., reference = motif) %>%
-  dplyr::filter(reference != "NA") %>%
-  tidyr::separate(reference,
-    into = c("number", "what"),
-    remove <- FALSE,
-    sep = "_"
-  )
+  for (i in seq_along(dfs_motif)) {
+    current_df_name <- names(dfs_motif)[[i]]
+    matching_motif <- motif_results[[current_df_name]]
+     if (!is.null(matching_motif)) {
+        ts_plot_construct(dfs_motif[[i]], matching_motif, pathid)
+     } else {
+        print("no motifs for this timeseries/index, skipping plot...")
+     }
+  }
+}
+
+ts_plot_call(dfs_motif_new_2, motif_results_9, pathid = "output/figures/")
+
+# Takes one data frame as input, and returns one plot as output
+ts_plot_construct <- function(x, motif_list, pathid) {
+  x_new <- ts_plot_prep(x)
+  x_ts <- ts_plot_prep_ts(x_new)
+  x_motif <- ts_plot_prep_motif(x_new)
+  file_id <- create_file_name_index_plot(x)
+  plot_out <- ts_plot_together(x_ts, x_motif, motif_list)
+  ggplot2::ggsave(filename = get_data_path(pathid, file_id), plot = plot_out)
+
+}
+
+# Rename index column to "Index"
+ts_plot_prep <- function(x) {
+  
+  # Get the index name of the current dataframe
+  current_index <- names(x)[1]
+  print(current_index)
+  names(x)[1] <- "Index"
+  return(x)
+
+}
+
+ts_plot_prep_ts <- function(x) {
+
+  # Create a motified data frame for plotting
+  plot_ts <- x %>%
+    dplyr::ungroup() %>%
+    dplyr::select(Index, reference, position, date, time) %>%
+    tidyr::separate(.,
+      reference,
+      into = c("number", "what"),
+      remove = FALSE
+    )
+}
+
+ts_plot_prep_motif <- function(x) {
+
+  # Create a motified data frame for plotting
+  # For the geom_lines
+  plot_motif <- x %>%
+    dplyr::ungroup() %>%
+    dplyr::select(motif, position, Index) %>%
+    dplyr::rename(., reference = motif) %>%
+    dplyr::filter(reference != "NA") %>%
+    tidyr::separate(reference,
+      into = c("number", "what"),
+      remove <- FALSE,
+      sep = "_"
+    )
+}
+
 
 # Construct the plot
 # line parts commented out weren't working or something
-
-ggplot2::ggplot(plot_ts, ggplot2::aes(x = position, y = Index)) +
-  ggplot2::geom_line(ggplot2::aes(colour = reference, linetype = reference), colour = "grey") +
-  # geom_vline(xintercept = line_intercept1$position, linetype = "dotted") +
-  # geom_text(data = line_intercept1,
-  #           aes(label = time, y = 10, size = 1),
-  #           check_overlap = T) +
-  # geom_vline(xintercept = line_intercept2$position, linetype = "dotted") +
-  # geom_text(data = line_intercept2,
-  #           aes(label = time, y = 10, size = 1),
-  #           check_overlap = T) +
-  ggplot2::scale_linetype_manual(values = "dotted") +
-  ggplot2::geom_line(data = plot_motif, ggplot2::aes(
-    x = position,
-    y = Index,
-    colour = reference
-  )) +
-  ggplot2::scale_color_manual(values = c(replicate(nrow(
-    motif_results
-  ), "#2ca25f"))) +
-  ggplot2::theme_classic() +
-  ggplot2::labs(title = paste(index, sep = " ")) +
-  ggplot2::theme(
-    legend.title = ggplot2::element_blank(),
-    axis.title.x = ggplot2::element_blank(),
-    axis.text = ggplot2::element_blank(),
-    axis.ticks = ggplot2::element_blank(),
-    legend.position = "none"
-  )
-
-pathid
+ts_plot_together <- function(plot_ts, plot_motif, motif_list) {
+  plot_out <- ggplot2::ggplot(plot_ts, ggplot2::aes(x = position, y = Index)) +
+    ggplot2::geom_line(ggplot2::aes(colour = reference, linetype = reference), colour = "grey") +
+    # geom_vline(xintercept = line_intercept1$position, linetype = "dotted") +
+    # geom_text(data = line_intercept1,
+    #           aes(label = time, y = 10, size = 1),
+    #           check_overlap = T) +
+    # geom_vline(xintercept = line_intercept2$position, linetype = "dotted") +
+    # geom_text(data = line_intercept2,
+    #           aes(label = time, y = 10, size = 1),
+    #           check_overlap = T) +
+    ggplot2::scale_linetype_manual(values = "dotted") +
+    ggplot2::geom_line(data = plot_motif, ggplot2::aes(
+      x = position,
+      y = Index,
+      colour = reference
+    )) +
+    ggplot2::scale_color_manual(values = c(replicate(nrow(
+      motif_list
+    ), "#2ca25f"))) +
+    ggplot2::theme_classic() +
+    ggplot2::labs(title = paste(index, sep = " ")) +
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      axis.title.x = ggplot2::element_blank(),
+      axis.text = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank(),
+      legend.position = "none"
+    )
+}
 
 # The order of naming is different here to previously?
 create_file_name_index_plot <- function(df) {
-  df <- dfs_motif_sub_2
   month_id <- unique(df$month)
   site_id <- unique(df$site)
   index_id <- names(df)[1]
@@ -757,6 +803,28 @@ create_file_name_index_plot <- function(df) {
   return(file_id)
 }
 
-ggplot2::ggsave(
-  get_data_path(pathid, create_file_name_index_plot(dfs_motif_sub_3))
-)
+# ------------
+# notes:
+# This was an edge case that I believe i fixed. need to document this further
+# and add more test cases, and update original test cases. 
+
+# TODO START HERE START HERE START HERE
+# I was making sure the recursion works for this edge case, no overlap found on
+# first run, double check everything!!!
+# could have option to set your own overlap threshold
+first_run <- TRUE
+remove_repeated_master(motif_results_8[[1]])
+
+test <- remove_repeated_prep(motif_results_8[[1]])
+
+test <- function_remove_loop(test)
+# discovered a new test case, first run, and no overlap discovered. But I think
+# 95% is too strict: try 90%. But first handle this edge case.
+# 1     34     2.59     4 motif       15    49   0.941     34 NA
+# 2     34     2.63     6 motif       17    51   0.824     34 NA
+motif_results_8[[1]]
+# Step 5 loop through each row in the dfs_motif list
+# Remember the dfs_motif list is a list of data frames with the acoustic index
+# value for each result minute. We need to match these values to the motifs
+# For testing, the motif result Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B is
+# being used, and the df is Booroopki-Dry-B_Dec_AC

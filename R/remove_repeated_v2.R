@@ -7,7 +7,7 @@ remove_repeated_prep <- function(data) {
   return(data)
 }
 
-function_remove_loop <- function(practice) {
+function_remove_loop <- function(practice, threshold) {
   for (row in seq_along(practice$id)) {
     message(row)
     # check if last row in the dataframe
@@ -29,7 +29,7 @@ function_remove_loop <- function(practice) {
         overlap_length_next <- range_both / (practice$length[row + 1])
 
         # if either overlap is equal to or greater than 0.95
-        if (overlap_length >= 0.95 || overlap_length_next >= 0.95) {
+        if (overlap_length >= threshold || overlap_length_next >= threshold) {
           message("yes, significant overlap")
 
           # check if length is equal
@@ -68,7 +68,7 @@ function_remove_loop <- function(practice) {
 # 10. if the data frame has no "remove" in the action column, return the data
 #     frame
 
-function_remove_v1 <- function(practice) {
+function_remove_v1 <- function(practice, threshold) {
   # remove rows then run the loop
   # # assign the action column "keep" if == NA
   # practice_cleaned <- practice %>%
@@ -79,7 +79,7 @@ function_remove_v1 <- function(practice) {
   # sort by Start column
   practice_cleaned <- practice_cleaned[order(practice_cleaned$Start), ]
   # run the loop
-  practice_out <- suppressMessages(function_remove_loop(practice_cleaned))
+  practice_out <- suppressMessages(function_remove_loop(practice_cleaned, threshold))
   return(practice_out)
 }
 
@@ -105,7 +105,10 @@ function_remove_v1 <- function(practice) {
 
 # recursion_counter <- 0
 
-remove_repeated_master <- function(input_df) {
+remove_repeated_master <- function(input_df, threshold) {
+  
+  remove_assertions(threshold)
+  
   # recursion_counter <<- recursion_counter + 1
   # check for NULL input
   if (is.null(input_df)) {
@@ -144,9 +147,9 @@ remove_repeated_master <- function(input_df) {
       message("first run:")
       first_run <<- FALSE
       output_df <- suppressMessages(
-        function_remove_v1(input_df)
+        function_remove_v1(input_df, threshold)
       )
-      remove_repeated_master(output_df)
+      remove_repeated_master(output_df, threshold)
     } else {
       # not first run, so check the base case
       # if practice$action contains "remove"
@@ -159,9 +162,19 @@ remove_repeated_master <- function(input_df) {
       } else {
         # rows tagged with remove, running again
         # call the function
-        output_df <- suppressMessages(function_remove_v1(input_df))
-        remove_repeated_master(output_df)
+        print("removing rows... running again")
+        output_df <- suppressMessages(function_remove_v1(input_df, threshold))
+        remove_repeated_master(output_df, threshold)
       }
     }
+  }
+}
+
+remove_assertions <- function(threshold) {
+  if (!is.numeric(threshold)) {
+     stop("Threshold must be numeric, and between 0 and 1.")
+  } else if (threshold < 0 || threshold > 1) {
+    stop("Threshold must be numeric, and between 0 and 1.")
+  } else {
   }
 }
