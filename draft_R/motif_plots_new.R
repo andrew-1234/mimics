@@ -196,7 +196,7 @@ for (i in dfs_so_far) {
 
   names(this_list) <- c(newname1, newname2, newname3)
 
-  #dfs_motif[[i]] <- this_list
+  # dfs_motif[[i]] <- this_list
   dfs_motif <- c(dfs_motif, this_list)
 }
 
@@ -514,19 +514,17 @@ test_that("each row is less than the next row", {
 # Step 4 run the remove_repeated function on the data frames
 # can see here how the two functions differ
 
-remove_repeated_wrapped <- function (motif_results, threshold = 0.95) {
+remove_repeated_wrapped <- function(motif_results, threshold = 0.95) {
   new_list <- list()
-  
+
   for (i in seq_along(motif_results)) {
     item <- motif_results[[i]]
     if (!is.null(item) && nrow(item) > 0) {
       first_run <<- TRUE
-      new_list[[i]]  <- remove_repeated_master(item, threshold)
+      new_list[[i]] <- remove_repeated_master(item, threshold)
       names(new_list)[i] <- names(motif_results)[i]
-      
     }
   }
-
   filtered_list <- Filter(Negate(is.null), new_list)
   return(filtered_list)
 }
@@ -551,7 +549,6 @@ motif_results_9 <- remove_repeated_wrapped(motif_results_8, threshold = 0.9)
 # cropping in the future.
 
 motif_match_df <- function(dfs_motif, motif_results) {
-  
   for (i in seq_along(dfs_motif)) {
     # get the dataframe
     item <- dfs_motif[[i]]
@@ -567,20 +564,20 @@ motif_match_df <- function(dfs_motif, motif_results) {
       for (row in seq_len(nrow(motif_results_sub))) {
         tryCatch(
           {
-              item[
-                motif_results_sub$Start[row]:motif_results_sub$End[row],
-                c("motif", "distance", "length")
-              ] <- motif_results_sub[row, c("instance", "Distance", "length")]
-
-          }, error = function(e) {
+            item[
+              motif_results_sub$Start[row]:motif_results_sub$End[row],
+              c("motif", "distance", "length")
+            ] <- motif_results_sub[row, c("instance", "Distance", "length")]
+          },
+          error = function(e) {
             print("error")
-            
-          })
+          }
+        )
       }
       dfs_motif[[i]] <- item
     }
   }
-return(dfs_motif)
+  return(dfs_motif)
 }
 
 dfs_motif_new <- motif_match_df(dfs_motif, motif_results_9)
@@ -611,7 +608,6 @@ dfs_motif_new <- motif_match_df(dfs_motif, motif_results_9)
 
 motif_filtering <- function(dfs_motif_new) {
   dfs_motif_new_2 <- lapply(dfs_motif_new, function(x) {
-
     x <- x %>%
       dplyr::group_by(motif) %>%
       dplyr::mutate(n = ifelse(is.na(motif),
@@ -624,8 +620,7 @@ motif_filtering <- function(dfs_motif_new) {
         NA,
         n
       )) # %>%
-      # dplyr::filter(is.na(n) | n >= 20)
-
+    # dplyr::filter(is.na(n) | n >= 20)
   })
   return(dfs_motif_new_2)
 }
@@ -640,9 +635,10 @@ dfs_motif_new_2 <- motif_filtering(dfs_motif_new)
 
 save_final_ts <- function(dfs_motif, himepath) {
   invisible(
-    lapply(dfs_motif, 
-      create_file_name_motif_csv, 
-      himepath = himepath)
+    lapply(dfs_motif,
+      create_file_name_motif_csv,
+      himepath = himepath
+    )
   )
 }
 
@@ -664,7 +660,7 @@ create_file_name_motif_csv <- function(df, himepath) {
       get_data_path(himepath),
       file_id
     ),
-  row.names = F
+    row.names = F
   )
 }
 
@@ -694,11 +690,11 @@ ts_plot_call <- function(dfs_motif, motif_results, pathid) {
   for (i in seq_along(dfs_motif)) {
     current_df_name <- names(dfs_motif)[[i]]
     matching_motif <- motif_results[[current_df_name]]
-     if (!is.null(matching_motif)) {
-        ts_plot_construct(dfs_motif[[i]], matching_motif, pathid)
-     } else {
-        print("no motifs for this timeseries/index, skipping plot...")
-     }
+    if (!is.null(matching_motif)) {
+      ts_plot_construct(dfs_motif[[i]], matching_motif, pathid)
+    } else {
+      print("no motifs for this timeseries/index, skipping plot...")
+    }
   }
 }
 
@@ -712,22 +708,18 @@ ts_plot_construct <- function(x, motif_list, pathid) {
   file_id <- create_file_name_index_plot(x)
   plot_out <- ts_plot_together(x_ts, x_motif, motif_list)
   ggplot2::ggsave(filename = get_data_path(pathid, file_id), plot = plot_out)
-
 }
 
 # Rename index column to "Index"
 ts_plot_prep <- function(x) {
-  
   # Get the index name of the current dataframe
   current_index <- names(x)[1]
   print(current_index)
   names(x)[1] <- "Index"
   return(x)
-
 }
 
 ts_plot_prep_ts <- function(x) {
-
   # Create a motified data frame for plotting
   plot_ts <- x %>%
     dplyr::ungroup() %>%
@@ -740,7 +732,6 @@ ts_plot_prep_ts <- function(x) {
 }
 
 ts_plot_prep_motif <- function(x) {
-
   # Create a motified data frame for plotting
   # For the geom_lines
   plot_motif <- x %>%
@@ -806,7 +797,7 @@ create_file_name_index_plot <- function(df) {
 # ------------
 # notes:
 # This was an edge case that I believe i fixed. need to document this further
-# and add more test cases, and update original test cases. 
+# and add more test cases, and update original test cases.
 
 # TODO START HERE START HERE START HERE
 # I was making sure the recursion works for this edge case, no overlap found on

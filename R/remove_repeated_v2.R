@@ -1,3 +1,18 @@
+remove_repeated_wrapped <- function(motif_results, threshold = 0.95) {
+  new_list <- list()
+
+  for (i in seq_along(motif_results)) {
+    item <- motif_results[[i]]
+    if (!is.null(item) && nrow(item) > 0) {
+      first_run <<- TRUE
+      new_list[[i]] <- remove_repeated_master(item, threshold)
+      names(new_list)[i] <- names(motif_results)[i]
+    }
+  }
+  filtered_list <- Filter(Negate(is.null), new_list)
+  return(filtered_list)
+}
+
 remove_repeated_prep <- function(data) {
   # create length column
   data$length <- data$End - data$Start
@@ -106,9 +121,8 @@ function_remove_v1 <- function(practice, threshold) {
 # recursion_counter <- 0
 
 remove_repeated_master <- function(input_df, threshold) {
-  
   remove_assertions(threshold)
-  
+
   # recursion_counter <<- recursion_counter + 1
   # check for NULL input
   if (is.null(input_df)) {
@@ -172,7 +186,7 @@ remove_repeated_master <- function(input_df, threshold) {
 
 remove_assertions <- function(threshold) {
   if (!is.numeric(threshold)) {
-     stop("Threshold must be numeric, and between 0 and 1.")
+    stop("Threshold must be numeric, and between 0 and 1.")
   } else if (threshold < 0 || threshold > 1) {
     stop("Threshold must be numeric, and between 0 and 1.")
   } else {
