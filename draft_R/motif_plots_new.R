@@ -793,29 +793,3 @@ create_file_name_index_plot <- function(df) {
   )
   return(file_id)
 }
-
-# ------------
-# notes:
-# This was an edge case that I believe i fixed. need to document this further
-# and add more test cases, and update original test cases.
-
-# TODO START HERE START HERE START HERE
-# I was making sure the recursion works for this edge case, no overlap found on
-# first run, double check everything!!!
-# could have option to set your own overlap threshold
-first_run <- TRUE
-remove_repeated_master(motif_results_8[[1]])
-
-test <- remove_repeated_prep(motif_results_8[[1]])
-
-test <- function_remove_loop(test)
-# discovered a new test case, first run, and no overlap discovered. But I think
-# 95% is too strict: try 90%. But first handle this edge case.
-# 1     34     2.59     4 motif       15    49   0.941     34 NA
-# 2     34     2.63     6 motif       17    51   0.824     34 NA
-motif_results_8[[1]]
-# Step 5 loop through each row in the dfs_motif list
-# Remember the dfs_motif list is a list of data frames with the acoustic index
-# value for each result minute. We need to match these values to the motifs
-# For testing, the motif result Res_TS_AcousticComplexity_Dec_Booroopki-Dry-B is
-# being used, and the df is Booroopki-Dry-B_Dec_AC

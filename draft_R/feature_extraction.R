@@ -1,19 +1,25 @@
-library(magick)
+# library(magick)
 
-data_indices_all <- my_indices_data
-himeclean <- "output/hime-clean" # where you stored the hime-clean csv files
-outputspecpath <- "output/specs"
-indicespath <- "output/indices-output-ap" # where you stored the output of AP
+# data_indices_all <- my_indices_data
+# himeclean <- "output/hime-clean" # where you stored the hime-clean csv files
+# outputspecpath <- "output/specs"
+# indicespath <- "output/indices-output-ap" # where you stored the output of AP
+# outwavelet <- "output/wavelets"
+# asdf <- feature_extraction(
+#   data_indices_all = my_indices_data,
+#   himeclean = "output/hime-clean",
+#   outputspecpath = "output/specs",
+#   indicespath = "output/indices-output-ap",
+#   outwavelet = "output/wavelets"
+# )
 
-asdf <- feature_extraction(
-  data_indices_all = my_indices_data,
-  himeclean = "output/hime-clean",
-  outputspecpath = "output/specs",
-  indicespath = "output/indices-output-ap",
-  outwavelet = "output/wavelets"
-)
-
-feature_extraction <- function(data_indices_all, himeclean, outputspecpath, indicespath, outwavelet) {
+#' @export feature_extraction
+feature_extraction <- function(
+    data_indices_all,
+    himeclean,
+    outputspecpath,
+    indicespath,
+    outwavelet) {
   # get the unique site names
   total_sites <- unique(data_indices_all$site)
 
@@ -78,7 +84,11 @@ feature_extraction <- function(data_indices_all, himeclean, outputspecpath, indi
 # this will call at the start of the function, followed by the for loop
 
 # import and bind together motif csv files ----
-bind_motif <- function(total_sites, motif_complete, himepath) {
+#' @keywords internal
+bind_motif <- function(
+    total_sites,
+    motif_complete,
+    himepath) {
   for (site in total_sites) {
     # list the files in motif csv files in output/hime for each site
     files <-
@@ -134,8 +144,9 @@ bind_motif <- function(total_sites, motif_complete, himepath) {
 }
 
 # prepare the img data table----
+#' @keywords internal
 img_data_table <- function(motif_complete) {
-  img_prep <- separate(
+  img_prep <- tidyr::separate(
     motif_complete,
     id,
     into = c(
@@ -149,16 +160,17 @@ img_data_table <- function(motif_complete) {
     sep = "_",
     remove = F
   ) %>%
-    group_by(., id) %>%
-    mutate(., new_position = order(order(position))) %>%
-    ungroup(.) %>%
-    select(everything(), -c(position)) %>%
-    group_by(id) %>%
+    dplyr::group_by(., id) %>%
+    dplyr::mutate(., new_position = order(order(position))) %>%
+    dplyr::ungroup(.) %>%
+    dplyr::select(everything(), -c(position)) %>%
+    dplyr::group_by(id) %>%
     filter(ResultMinute == min(ResultMinute)) # what does this do? makes the df small
   return(img_prep)
 }
 
 # extract specs function
+#' @keywords internal
 extract_specs <- function(outputspecs, img_prep_data, indicespath) {
   img_prep <- img_prep_data
 
@@ -266,7 +278,7 @@ extract_specs <- function(outputspecs, img_prep_data, indicespath) {
 
 
 
-
+#' @keywords internal
 make_csvs <- function(motif_complete, outputpath) {
   # check/create path to store the wavelet outputs
   outputpath_full <- get_data_path(outputpath)
@@ -284,10 +296,10 @@ make_csvs <- function(motif_complete, outputpath) {
     motif_complete_site <- motif_complete %>% filter(site == siteID)
 
     ts_data <- select(motif_complete_site, index_value, position, id) %>%
-      group_by(., id) %>%
-      mutate(., new_position = order(order(position))) %>%
-      ungroup(.) %>%
-      select(., everything(), -position) %>%
+      dplyr::group_by(., id) %>%
+      dplyr::mutate(., new_position = order(order(position))) %>%
+      dplyr::ungroup(.) %>%
+      dplyr::select(., everything(), -position) %>%
       tidyr::pivot_wider(., names_from = new_position, values_from = index_value) %>%
       as.data.frame(.)
 
@@ -320,10 +332,10 @@ make_csvs <- function(motif_complete, outputpath) {
 
     wtData$id <- rownames(ts_data)
 
-    wtData <- mutate(wtData, class = NA) %>%
-      mutate(., geophony = NA) %>%
-      mutate(., technophony = NA) %>% # this had a pipe operator missing
-      select(., id, class, geophony, technophony, everything())
+    wtData <- dplyr::mutate(wtData, class = NA) %>%
+      dplyr::mutate(., geophony = NA) %>%
+      dplyr::mutate(., technophony = NA) %>% # this had a pipe operator missing
+      dplyr::select(., id, class, geophony, technophony, everything())
 
     # pick 30 percent of the samples to label, without replacement
     samples <-

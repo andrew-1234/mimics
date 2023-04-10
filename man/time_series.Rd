@@ -4,20 +4,23 @@
 \alias{time_series}
 \title{Generate acoustic indices time series}
 \usage{
-time_series(indicesfolder, outputfolder)
+time_series(path_to_indices, path_to_output)
 }
 \arguments{
-\item{indicesfolder}{this is where your indices are saved}
+\item{path_to_indices}{this is where your indices are saved}
 
-\item{outputfolder}{this is where you would like the timeseries data saved}
+\item{path_to_output}{this is where you would like the time series data saved}
 }
 \value{
-a dataframe
+Data frame
 }
 \description{
 Output is a folder which contains .csv and .txt files of time series data for each acoustic index.
 One file per index, per site, per month
 }
 \examples{
-time_series(indicesfolder = "output/indices-output-ap", outputfolder = "output/timeseries")
+time_series(
+  indicesfolder = "output/indices-output-ap",
+  outputfolder = "output/timeseries"
+)
 }

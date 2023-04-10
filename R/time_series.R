@@ -3,15 +3,18 @@
 #' Output is a folder which contains .csv and .txt files of time series data for each acoustic index.
 #' One file per index, per site, per month
 #'
-#' @param indicesfolder this is where your indices are saved
-#' @param outputfolder this is where you would like the timeseries data saved
+#' @param path_to_indices this is where your indices are saved
+#' @param path_to_output this is where you would like the time series data saved
 #'
-#' @return a dataframe
-#' @export
+#' @return Data frame
+#' @export time_series
 #'
 #' @examples
-#' time_series(indicesfolder = "output/indices-output-ap", outputfolder = "output/timeseries")
-time_series <- function(indicesfolder, outputfolder) {
+#' time_series(
+#'   indicesfolder = "output/indices-output-ap",
+#'   outputfolder = "output/timeseries"
+#' )
+time_series <- function(path_to_indices, path_to_output) {
   site_id <- NULL
   point_id <- NULL
   date_time_id <- NULL
@@ -20,7 +23,7 @@ time_series <- function(indicesfolder, outputfolder) {
   data_indices_all <- NULL
 
   # set the folder with indices
-  folder <- indicesfolder
+  folder <- path_to_indices
 
   # get a list of files with indices results
   # there should be one file per audio recording
@@ -37,25 +40,25 @@ time_series <- function(indicesfolder, outputfolder) {
   indices_all_dataframe <- read_indices(files = file_list)
 
   # run the timeseries prep function, which returns a list
-  subset_list <- timeseries_prep(indicesdata = indices_all_dataframe, outputfolder = outputfolder)
+  subset_list <- timeseries_prep(indicesdata = indices_all_dataframe, outputfolder = path_to_output)
 
   # run the subset function
   subset_indices(
     indicesdata = indices_all_dataframe,
     subsetlist = subset_list,
-    timeseriesfolder = outputfolder
+    timeseriesfolder = path_to_output
   )
   return(indices_all_dataframe)
 }
 
 
-# This function runs a loop that generates metadata based on the file/folder names
-# if your audio files aren't structured like this it won't work - TODO
+# This function runs a loop that generates metadata based on the file/folder
+# names.
+# If your audio files aren't structured like this it won't work - TODO
 # Need additional options to support metadata sources - lookup table etc.
 # or if data is in a20 format - use default method (aka the current method)
 # generate metadata from api call to a2O??
 # support using a metadata table as input
-# PROBLEM: i'm not sure if its just because only 2 minutes but every file has the same scaled indices values with the mini a20 dataset. update: just tested on the full set and the values weren't identical. just a scale issue with the small sample of 2 minutes audio per file.
 
 #' Read indices function
 #'

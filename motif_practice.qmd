@@ -256,7 +256,7 @@ this step on your fixed audio. Remember that AP generates values for acoustic
 indices based on each 1 minute segment of audio.
 
 ```{r}
-AP_prepare("data/A2O-mini", "output/indices-output-ap-mini")
+ap_prepare("data/A2O-mini", "output/indices-output-ap-mini")
 ```
 
 ![Example output](motif_practice_insertimage_1.png)
@@ -346,15 +346,7 @@ Generates some time series / motif plots. Also outputs the motifs.csv files
 (motif + timeseries data combined).
 
 ```{r}
-debugOnce(MIMiCS::motif_plots)
-# undebug(MIMiCS::motif_plots)
-MIMiCS::motif_plots(
-  data_indices_all = my_indices_data,
-  outputfigures = "output/figures",
-  himedatapath = "output/hime-clean"
-)
-
-motif_ts_results <- motif_plot_master(
+motif_ts_results <- mimics_process(
   my_indices_data = my_indices_data,
   outputfigures = "output/figures",
   himepath = "output/hime-clean",
@@ -366,265 +358,58 @@ motif_ts_results <- motif_plot_master(
 
 ## Step 5 -
 
--step6: 6_CompleteMotif ---- -step7: 7_CropSpectrogram ---- -step8:
-8_FeatureExtraction ---- ATM this is called wavelet.R but might change. CHANGE
-to feature extraction
-
+- Create the spectrogram crops
+  
 ```{r}
-feature_extraction(
-  data_indices_all = my_indices_data,
-  himeclean = "output/hime-clean",
-  outputspecpath = "output/specs",
-  indicespath = "output/indices-output-ap-mini",
-  outwavelet = "output/wavelets"
+list_out <- feature_extraction(
+  motif_ts_results = motif_ts_results,
+  indices_output_folder = "output/indices-output-ap-mini",
+  folder_extension = ".flac",
+  cropped_images_path = "output/cropped"
 )
-str(my_indices_data)
-
 ```
+
+- Create sound crops (optional)
+
 
 - master spreadsheet
 - column with label type: manual vs forest
-
-
-```{r}
-# get the names of the motif DFs
-has_motifs <- names(motif_ts_results$motif_dfs)
-
-# filter the time series to just the ones with motifs
-motif_ts_has_motifs <- motif_ts_results$ts_motifs[has_motifs]
-```
-
-- test with one data frame and then lapply after
-
-Step 1: split by filename
-EVN = Events per second
-ENT = Entropy
-ACI = AcousticComplexity
-```{r}
-test <- motif_ts_has_motifs[[1]]
-
-# split by unique filename
-test_split <- split(test, test$FileName)
-# the names of this output are the unique filenames
-names(test_split)
-# for each filename, get the acoustic index name
-# which is always index 1 in the column names
-index_names <- lapply(test_split, function(x) names(x)[1])
-
-# lets work through using index position 1 for now
-# show the folder name:
-names(index_names)[[1]]
-# show the acoustic index name for the file we want:
-index_names[[1]]
-
-# convert the index name to the abbreviation
-index_names_2 <- lapply(index_names, function(x) {
-  if (x == "EventsPerSecond") {
-    "EVN"
-  } else if (x == "Entropy") {
-    "ENT"
-  } else if (x == "AcousticComplexity") {
-    "ACI"
-  }
-})
-
-# look for the spectrograms
-# we are looking in output/indices-output-ap-mini, recursively
-# look in this folder:
-matching_folder <- get_data_path(
-  "output/indices-output-ap-mini",
-  paste0(names(index_names_2)[[1]], ".flac")
-)
-
-# search the matching folder for the index name, with extension .png
-matching_image <- list.files(matching_folder,
-  pattern =
-    paste0(index_names_2[[1]], ".png"), recursive = TRUE, full.names = TRUE
-)
-
-# stop if not length 1
-if (length(matching_image) != 1) {
-  stop("Error: could not find matching image")
-}
-
-matching_df <- test_split[[1]]
-# we already filtered for dataframes that contain motifs
-# summarise this dataframe so that there is only one row per motif
-# with the start and end time of the motif, which is a numeric value from the
-# position column
-# TODO: important note: there are some short motifs here, I can't remember if I
-# added the step that short motifs or if that works or not. But I just realised it
-# isn't that necessary perhaps because you can get the start position and the length
-matching_df_summarised <- matching_df %>%
-  dplyr::group_by(motif, length) %>%
-  # remove NA rows
-  dplyr::filter(!is.na(motif)) %>%
-  dplyr::summarise(
-    start = min(position)
-    # length = length
-  ) %>%
-  dplyr::arrange(start)
-# add end column which is start + length
-matching_df_summarised_new <- matching_df_summarised %>%
-  dplyr::mutate(end = start + length)
-```
-
-```{r}
-# now we have the matching_image, and the matching_df_summarised_new
-# for each row in the matching_df_summarised_new, we want to crop the image
-# and save it to a new folder
-# output/cropped
-# filename for each image will be the original image name, plus the motif name
-# and the start and end time
-# create the list of image names
-# this is vectorised so it creates a list of the same length as the number of
-# rows, even though only one image name is used
-# remove .png from the matching image name
-# remove last four characters from the matching image name
-matching_image_name <- substr(matching_image, 1, nchar(matching_image) - 4)
-
-# create the image names
-image_names <- paste0(
-  basename(matching_image_name),
-  "_",
-  matching_df_summarised_new$motif,
-  "_",
-  matching_df_summarised_new$start,
-  "-",
-  matching_df_summarised_new$end,
-  ".png"
-)
-
-# create full path for image names
-image_names_full_output <- get_data_path("output/cropped", image_names)
-```
-
-```{r}
-# now we read in matching_image, and crop it for each row in the
-# matching_df_summarised_new
-# we want to crop the image to the start and end time of the motif
-# we want to save the cropped image to the output/cropped folder
-lapply(seq_len(nrow(matching_df_summarised_new)), function(row) {
-  # read in the image
-  img <- magick::image_read(matching_image)
-  # crop the image
-  img_crop <- magick::image_crop(
-    img,
-    magick::geometry_area(
-      height = 316, # 256,
-      width = matching_df_summarised_new$length[row] - (1 - matching_df_summarised_new$start[row]),
-      # y_off = 20, # cropping offset don't touch
-      x_off = matching_df_summarised_new$start[row]
-    )
-  )
-  # save the image
-  magick::image_write(img_crop, image_names_full_output[row])
-})
-# this works because the spectrogram images are 120 pixels wide, 1 pixel per
-# second, so the result minute is used to crop based on pixels.
-# in the df. there is an end position of 146, which is greater than the width of
-# the image, so the resulting crop is actually only 112 to 120 pixels and very
-# narrow / hard to see
-
-```
-
-- this works above.
-- below: alternate method to get higher quality spectrogram crops
-
-```{r}
-# take the matching image, and source the sound file that it was created from
-# then crop the sound file to the start and end time of the motif
-matching_sound <- basename(matching_image)
-# remove the suffix "__.*.png"
-matching_sound <- gsub("__.*.png", "", matching_sound)
-# search the original sound folder used for the matching sound
-# data/A2O-mini
-extension <- ".flac"
-# do this because file names will probably contain regex characters such as +
-# which will cause problems with the pattern matching
-matching_sound_escaped <- stringr::str_escape(matching_sound)
-matching_sound_file <- list.files(
-  get_data_path("data/A2O-mini"),
-  pattern = paste0(matching_sound_escaped, extension),
-  recursive = TRUE,
-  full.names = TRUE
-)
-```
-
 - create a dataframe that shows the motifs (motif and match name), the cropped
 spectrogram link, and a field for classification type (manual or forest), and
 classification (insect, bird, frog, etc)
-  
-```{r}
-# create a dataframe with the motif and match name
-# and the cropped spectrogram link
-# and a field for classification type (manual or forest)
-# and classification (insect, bird, frog, etc)
-# and the filename
-```
-
 - this will require ffmpeg installed and available on path
   
 ```{r}
-# quick fix for length past file end
-matching_df_summarised_new[4, 4] <- 120
-matching_df_summarised_new$file_name <- matching_sound_file
-crop_convert_audio <- function(df, output_dir) {
-  output_dir <- get_data_path(output_dir)
-  # Loop through each row of the input dataframe
-  for (i in seq_len(nrow(df))) {
-    # Construct input and output file paths
-    file_name <- df[[i, "file_name"]]
-    basename_out <- basename(file_name)
+list_out <- find_matching_audio(
+  list_out,
+  "data/A2O-mini"
+)
 
-    input_file <- file.path(file_name)
-    output_file <- file.path(output_dir, paste0(df[i, "motif"], "_", basename_out))
-
-    # Construct ffmpeg command to crop audio file
-    # convert minutes to seconds
-    start <- df[i, "start"] * 60
-    end <- df[i, "end"] * 60
-
-    crop_cmd <- paste0(
-      "ffmpeg -i ", shQuote(input_file),
-      " -ss ", start, " -to ", end,
-      " -c copy ", shQuote(output_file)
-    )
-
-    # Execute ffmpeg command to crop audio file
-    system(crop_cmd)
-
-    # Convert cropped audio file to .wav format
-    # With a new name
-    basename_out_trim <- gsub(".flac", "", basename_out)
-    output_file_wav <- file.path(output_dir, paste0(
-      basename_out_trim, "_", df[[i, "motif"]], "_", format(df[[i, "start"]], nsmall = 2, trim = TRUE), "-",
-      format(df[[i, "end"]], nsmall = 2, trim = TRUE), ".wav"
-    ))
-
-    convert_cmd <- paste0(
-      "ffmpeg -i ", shQuote(output_file),
-      " -acodec pcm_s16le -ac 1 -ar 44100 ",
-      shQuote(output_file_wav)
-    )
-
-    # Execute ffmpeg command to convert cropped audio file to .wav format
-    system(convert_cmd)
-    # Remove the cropped flac that was converted
-    file.remove(output_file)
-  }
-}
-
-crop_convert_audio(matching_df_summarised_new, "output/cropped")
+list_out_crops <- crop_audio(
+  list_out,
+  "output/sound-cropped"
+)
 ```
 
 - you look at the spectrogram from the insect
 - and you are trying to classify what THAT index / spectrogram is capturing
 - not what exists in the entire crop
 - the classifications can be open 
-- anthophony could be car, airplane etc if you are interested in classifying
+- anthrophony could be car, airplane etc if you are interested in classifying
 that, or just anthophony
 - could be chickens, cows, goats, could classify as anthophony because not part
 of natural environment
-- 
 
+
+
+```{r}
+# For the first time classifying
+mimics_classify(list_out_crops, seed = 1234)
+
+# For continuing classifying
+continue_df <- read.csv("img-class-backup-2023-04-10.csv")
+mimics_classify(continue_df)
+```
+
+- todo: wavelet thing
+- classify etc.
